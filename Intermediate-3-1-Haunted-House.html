@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intermediate 3-1 Haunted House</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Creepster&family=JetBrains+Mono:wght@500;700&family=STIX+Two+Text:wght@500&display=swap">
+<style>
+/* Layout: a moonlit page; the house map is the centerpiece, questions open as a parchment-dark panel over it.
+   Deliberately one look (night), so colors are set once on :root with color-scheme dark. */
+:root{
+  color-scheme:dark;
+  --night:#0c0814; --night2:#140d20; --panel:#1b1228; --panel2:#231734; --ink:#f2e8da; --muted:#b4a3c4;
+  --rule:#35264a; --rule-strong:#57406f;
+  --accent:#ff8a1f; --accent-ink:#1d0d00; --accent-soft:#3a2210;
+  --gold:#ffd166; --slime:#8be36b;
+  --ok:#7ee08a; --ok-soft:#163020; --bad:#ff7070; --bad-soft:#3b1519; --help:#c7a4ff; --help-soft:#2a1c42;
+  --line1:#6aa6ff; --line2:#ff7a59; --plot-bg:#120b1b; --plot-grid:#2b2140; --axis:#9c8bb0;
+  --f-display:"Creepster", "Chiller", fantasy, cursive;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-math:"STIX Two Text", "Times New Roman", Georgia, serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --f-emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--night)}
+body{
+  margin:0; color:var(--ink); background:var(--night);
+  background-image:radial-gradient(circle at 85% -5%, rgba(255,209,102,.16) 0 70px, rgba(255,209,102,.05) 71px 190px, transparent 191px),
+                   radial-gradient(ellipse at 50% 120%, rgba(139,227,107,.07), transparent 60%);
+  background-attachment:fixed;
+  font-family:var(--f-body); font-size:17px; line-height:1.55;
+}
+.wrap{max-width:960px; margin:0 auto; padding-block:18px 48px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:16px}
+header.top{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px}
+.eyebrow{font-size:.76rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700}
+h1{font-family:var(--f-display); font-weight:400; font-size:clamp(2rem, 6vw, 3.1rem); line-height:1; margin:2px 0 0; color:var(--accent); letter-spacing:.02em; text-shadow:0 0 18px rgba(255,138,31,.35); text-wrap:balance}
+h2{font-family:var(--f-display); font-weight:400; font-size:clamp(1.6rem, 4.5vw, 2.1rem); line-height:1.1; margin:0; color:var(--accent); letter-spacing:.03em; text-wrap:balance}
+h3{font-size:1.08rem; margin:0}
+h4{margin:0 0 4px; font-size:.78rem; letter-spacing:.09em; text-transform:uppercase; color:var(--help)}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:.9rem}
+.stack{display:flex; flex-direction:column; gap:12px}
+.sound{display:flex; gap:8px; flex-wrap:wrap}
+.who{font-size:.92rem; color:var(--muted)} .who b{color:var(--ink)}
+
+.btn{font:inherit; font-size:.95rem; font-weight:700; color:var(--ink); background:var(--panel2); border:2px solid var(--rule-strong); border-radius:8px; padding:8px 16px; cursor:pointer; min-height:42px}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:focus-visible,.fld:focus-visible,a:focus-visible,canvas:focus-visible,.av:focus-visible,.tile:focus-visible,.slot:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+.btn:disabled{opacity:.45; cursor:default}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.help{border-color:var(--help); color:var(--help)}
+.btn.armed{border-color:var(--bad); color:var(--bad)}
+.btn.tog{font-size:.85rem; min-height:36px; padding:5px 12px}
+.btn.tog[aria-pressed="false"]{color:var(--muted); border-style:dashed}
+.actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.fld{font:inherit; color:var(--ink); background:var(--night2); border:2px solid var(--rule-strong); border-radius:6px; padding:5px 9px; max-width:100%}
+input.num{width:7.5ch; text-align:center; font-family:var(--f-mono); font-size:.95rem}
+.fld.ok{border-color:var(--ok); background:var(--ok-soft)}
+.fld.bad{border-color:var(--bad); background:var(--bad-soft)}
+.fld.missing{border-style:dashed; border-color:var(--help)}
+label.inline{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+
+.sheet{background:var(--panel); border:1px solid var(--rule-strong); border-radius:10px; padding:22px clamp(16px, 4vw, 32px); display:flex; flex-direction:column; gap:16px}
+
+/* start */
+.story{max-width:62ch}
+.avs{display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px}
+.av{font:inherit; color:var(--ink); background:var(--night2); border:2px solid var(--rule-strong); border-radius:10px; padding:10px 6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:.85rem; font-weight:700}
+.av span{font-family:var(--f-emoji); font-size:2.3rem; line-height:1.15}
+.av[aria-checked="true"]{border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 14px rgba(255,138,31,.35)}
+.namefield{display:flex; flex-direction:column; gap:4px; font-weight:700; max-width:360px}
+
+/* house */
+.hud{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px}
+.pieces{display:grid; grid-template-columns:repeat(13, minmax(0, 1fr)); gap:4px; flex:1 1 420px; min-width:0}
+.piece{height:34px; border-radius:6px; border:1px dashed var(--rule-strong); display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-size:.72rem; color:var(--muted); background:var(--night2)}
+.piece.got{border:1px solid var(--gold); color:var(--gold); background:#2e2210; font-size:1.05rem; font-weight:700; text-shadow:0 0 8px rgba(255,209,102,.5)}
+.piece.got.helped{border-color:var(--help); color:var(--help); background:var(--help-soft); text-shadow:none}
+.count{font-family:var(--f-mono); font-size:.9rem; color:var(--muted); white-space:nowrap}
+.count b{color:var(--gold)}
+.stage{position:relative; border:2px solid var(--rule-strong); border-radius:10px; overflow:hidden; background:#06040a}
+canvas#house{display:block; width:100%; touch-action:none; cursor:pointer}
+.status{min-height:1.6em; font-weight:700; color:var(--gold)}
+.under{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between}
+.pad{display:grid; grid-template-columns:repeat(3, 48px); grid-template-rows:repeat(2, 44px); gap:6px}
+.pad button{font-size:1.1rem; padding:0; min-height:0}
+.pad .u{grid-column:2; grid-row:1} .pad .l{grid-column:1; grid-row:2} .pad .d{grid-column:2; grid-row:2} .pad .r{grid-column:3; grid-row:2}
+.keys{font-size:.88rem; color:var(--muted); max-width:44ch}
+kbd{font-family:var(--f-mono); font-size:.8rem; border:1px solid var(--rule-strong); border-bottom-width:2px; border-radius:4px; padding:0 5px; color:var(--ink)}
+
+/* question panel */
+.modal{position:fixed; inset:0; z-index:40; background:rgba(6,3,10,.82); overflow-y:auto; display:flex; align-items:flex-start; justify-content:center;
+  padding-block:max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-bottom, 0px)); padding-left:max(12px, env(safe-area-inset-left, 0px)); padding-right:max(12px, env(safe-area-inset-right, 0px))}
+.dialog{width:100%; max-width:800px; background:var(--panel); border:2px solid var(--rule-strong); border-radius:12px; padding:20px clamp(14px, 4vw, 30px) 26px; display:flex; flex-direction:column; gap:14px; box-shadow:0 0 50px rgba(255,138,31,.14)}
+.dhead{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px}
+.qhead{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px}
+.tag{font-size:.76rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:var(--help-soft); color:var(--help)}
+.directions{font-weight:700}
+.sys{font-family:var(--f-math); font-size:1.45rem; line-height:1.45; border-left:3px solid var(--ink); border-radius:10px 0 0 10px; padding:2px 0 2px 14px; align-self:flex-start}
+.mathy{font-family:var(--f-math); font-size:1.15rem; white-space:nowrap}
+fieldset.pt{border:1px solid var(--rule-strong); border-radius:8px; padding:10px 14px 14px; margin:0; display:flex; flex-direction:column; gap:10px; min-width:0}
+fieldset.pt legend{font-weight:700; padding:0 6px}
+.work{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px}
+.work .mathy{min-width:9.5ch}
+.plotwrap{display:flex; flex-direction:column; gap:8px; max-width:440px}
+.plotbar{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; font-size:.85rem; color:var(--muted)}
+.plotbar .dot{display:inline-block; width:11px; height:11px; border-radius:50%; margin:0 5px 0 0; vertical-align:-1px}
+.plotbar .coord{font-family:var(--f-mono); color:var(--ink); font-weight:700}
+canvas.plot{width:100%; max-width:440px; aspect-ratio:1/1; display:block; border:2px solid var(--rule-strong); border-radius:6px; background:var(--plot-bg); cursor:crosshair; touch-action:manipulation}
+canvas.plot.small{max-width:320px; cursor:default}
+canvas.plot.ok{border-color:var(--ok)} canvas.plot.bad{border-color:var(--bad)} canvas.plot.missing{border-style:dashed; border-color:var(--help)}
+.step{font-weight:700; margin-top:4px}
+.desmos{display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent)}
+.msg{min-height:1.5em; font-weight:700}
+.msg.good{color:var(--ok)} .msg.warn{color:var(--bad)} .msg.info{color:var(--help)}
+.helpbox{border:1px solid var(--help); background:var(--help-soft); border-radius:8px; padding:14px 18px; display:flex; flex-direction:column; gap:14px}
+.helpbox ol{margin:4px 0 0; padding-left:1.3em} .helpbox li{margin:3px 0}
+.helpbox p + p{margin-top:6px}
+.warnnote{font-size:.88rem; color:var(--help)}
+
+/* front door puzzle */
+.slots{display:flex; flex-wrap:wrap; gap:6px 16px}
+.word{display:flex; gap:5px}
+.slot,.tile{font:inherit; font-family:var(--f-mono); font-weight:700; font-size:1.25rem; width:40px; height:48px; border-radius:7px; display:flex; align-items:center; justify-content:center; padding:0}
+.slot{background:var(--night2); border:2px dashed var(--rule-strong); color:var(--gold); cursor:pointer}
+.slot.filled{border-style:solid; border-color:var(--gold)}
+.slot.ok{border-color:var(--ok); color:var(--ok)}
+.tiles{display:flex; flex-wrap:wrap; gap:6px}
+.tile{background:#2e2210; border:2px solid var(--gold); color:var(--gold); cursor:pointer; box-shadow:0 3px 0 #120c04}
+.tile:disabled{opacity:.18; cursor:default}
+
+/* finish + teacher */
+.code{font-family:var(--f-mono); font-weight:700; font-size:clamp(1rem, 3.6vw, 1.3rem); letter-spacing:.04em; background:var(--night2); color:var(--gold); border:2px dashed var(--accent); border-radius:8px; padding:14px 16px; word-break:break-all; user-select:all}
+.stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px}
+.stat{border:1px solid var(--rule-strong); border-radius:8px; padding:10px 14px}
+.stat b{display:block; font-size:1.6rem; line-height:1.1; font-variant-numeric:tabular-nums; color:var(--gold)}
+.stat span{font-size:.85rem; color:var(--muted)}
+.escaped{font-family:var(--f-mono); font-size:1.4rem; letter-spacing:.3em; color:var(--gold); text-shadow:0 0 12px rgba(255,209,102,.5)}
+.tablewrap{overflow-x:auto; min-width:0}
+table.rt{border-collapse:collapse; width:100%; font-size:.92rem; font-variant-numeric:tabular-nums}
+.rt th,.rt td{padding:7px 10px; border-bottom:1px solid var(--rule); text-align:left; vertical-align:top}
+.rt th{font-size:.75rem; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
+.pill{display:inline-block; padding:1px 9px; border-radius:20px; font-size:.82rem; font-weight:700; white-space:nowrap}
+.pill.own{background:var(--ok-soft); color:var(--ok)}
+.pill.rec{background:var(--accent-soft); color:var(--accent)}
+.pill.need,.pill.invalid{background:var(--bad-soft); color:var(--bad)}
+textarea.fld{width:100%; font-family:var(--f-mono); font-size:.88rem}
+.grid2{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px}
+.grid2 label{display:flex; flex-direction:column; gap:4px; font-weight:700; font-size:.92rem}
+details summary{cursor:pointer; font-weight:700}
+.report{border-top:1px solid var(--rule-strong); padding-top:14px; display:flex; flex-direction:column; gap:12px}
+.foot{font-size:.85rem; color:var(--muted); text-align:center}
+.foot a{color:var(--accent)}
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:max(18px, env(safe-area-inset-bottom, 0px)); z-index:60; max-width:min(560px, calc(100% - 32px)); background:#2e2210; color:var(--gold); border:2px solid var(--gold); border-radius:10px; padding:10px 16px; font-weight:700; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.5)}
+
+/* print review (only shows on paper / PDF) */
+#review{display:none}
+@media print{
+  html,body{background:#fff!important; color:#000}
+  body > *{display:none!important}
+  body > #review{display:block!important; font-family:var(--f-body); font-size:12pt; color:#000}
+  #review h1{font-family:var(--f-body); color:#000; text-shadow:none; font-size:20pt; font-weight:700}
+  #review h2{font-family:var(--f-body); color:#000; font-size:14pt; font-weight:700}
+  #review .rv{break-inside:avoid; border-top:1px solid #999; padding-top:8pt; margin-top:10pt}
+  #review .sys{border-color:#000}
+  #review img{width:2.6in; height:2.6in}
+  #review .res{font-weight:700}
+}
+@media (max-width:520px){ body{font-size:16px} .piece{height:28px; font-size:.62rem} .piece.got{font-size:.9rem} .sys{font-size:1.25rem} .slot,.tile{width:34px; height:42px; font-size:1.1rem} }
+@media (prefers-reduced-motion: no-preference){ .btn{transition:border-color .15s} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Intermediate Algebra · 3-1 Practice · Systems of Equations</div>
+      <h1>The Haunted House</h1>
+    </div>
+    <div class="stack" style="gap:6px; align-items:flex-end">
+      <div class="sound">
+        <button class="btn tog" id="musicBtn" aria-pressed="true">🎵 Music on</button>
+        <button class="btn tog" id="sfxBtn" aria-pressed="true">🔊 Sounds on</button>
+      </div>
+      <div class="who" id="who" hidden></div>
+    </div>
+  </header>
+
+  <!-- start -->
+  <section class="sheet" id="vStart" hidden>
+    <h2>You're locked in.</h2>
+    <p class="story">The front door slammed shut behind you. Thirteen doors in this house each hide one letter of the magic phrase that breaks the lock. Open a door, solve the problem behind it, and take its letter. When you have all 13, spell the phrase at the front door to escape.</p>
+    <ul class="story stack" style="gap:6px; padding-left:1.2em; margin:0">
+      <li>The doors match the 13 problems on your 3-1 worksheet. You can open them in any order.</li>
+      <li>Stuck? Press <b>Help</b>. The first press gives a hint. More presses give more help, up to the full solution.</li>
+      <li>If you use <b>More help</b> or the full solution, you must solve a similar problem on your own to earn that door's letter.</li>
+      <li>When you escape you get a <b>teacher code</b>. Turn it in with your name, spelled the same way you type it here.</li>
+    </ul>
+    <label class="namefield" for="nameIn">Your first and last name
+      <input class="fld" id="nameIn" type="text" maxlength="40" autocomplete="name" placeholder="First Last"></label>
+    <div class="stack" style="gap:8px">
+      <b>Choose your character</b>
+      <div class="avs" id="avs" role="radiogroup" aria-label="Choose your character"></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="startBtn">Enter the house</button><span class="msg warn" id="startMsg" role="status"></span></div>
+  </section>
+
+  <!-- house -->
+  <section id="vHouse" class="stack" hidden>
+    <div class="hud">
+      <div class="pieces" id="pieces" aria-label="Letter pieces from doors 1 to 13"></div>
+      <div class="count" id="count"></div>
+    </div>
+    <div class="stage"><canvas id="house" tabindex="0" aria-label="Map of the haunted house. Use arrow keys or tap a door to walk there."></canvas></div>
+    <p class="status" id="status" role="status"></p>
+    <div class="under">
+      <p class="keys">Walk with <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, or tap a spot on the map. Walk into a numbered door to open it. The front door is at the bottom.</p>
+      <div class="pad" aria-label="Walk buttons">
+        <button class="btn u" data-dir="0,-1" aria-label="Walk up">▲</button>
+        <button class="btn l" data-dir="-1,0" aria-label="Walk left">◀</button>
+        <button class="btn d" data-dir="0,1" aria-label="Walk down">▼</button>
+        <button class="btn r" data-dir="1,0" aria-label="Walk right">▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- escaped -->
+  <section class="sheet" id="vDone" hidden>
+    <p class="escaped">SPOOKY SYSTEMS</p>
+    <h2 id="doneTitle">You escaped!</h2>
+    <div class="stats" id="doneStats"></div>
+    <div class="stack" style="gap:8px">
+      <h3>Your teacher code</h3>
+      <p class="muted small" id="codeFor"></p>
+      <div class="code" id="codeOut"></div>
+      <div class="actions"><button class="btn primary" id="copyBtn">Copy code</button><span class="msg good" id="copyMsg" role="status"></span></div>
+      <textarea class="fld" id="copyFallback" rows="2" readonly hidden></textarea>
+    </div>
+    <div class="stack" style="gap:8px; border-top:1px solid var(--rule); padding-top:16px">
+      <h3>Review your work later</h3>
+      <p class="muted small">Prints every problem with how it went and a worked solution. In the print window, choose <b>Save as PDF</b> to keep a copy.</p>
+      <div class="actions"><button class="btn" id="printBtn">🖨️ Print or save as PDF</button><button class="btn" id="dlBtn">⬇️ Download review</button></div>
+    </div>
+    <div class="actions" style="border-top:1px solid var(--rule); padding-top:16px">
+      <button class="btn primary" id="againBtn">🎃 Play again</button>
+      <span class="muted small">Playing again erases this escape on this device. Copy your code first.</span>
+    </div>
+  </section>
+
+  <!-- teacher -->
+  <section class="sheet" id="vTeacher" hidden>
+    <h2>Teacher: read escape codes</h2>
+    <p class="muted small">A code only opens with the student's name. Capital letters, spaces and punctuation in the name don't matter, but the spelling does.</p>
+    <div class="grid2">
+      <label for="tName">Student name<input class="fld" id="tName" type="text" autocomplete="off"></label>
+      <label for="tCode">Code<input class="fld" id="tCode" type="text" autocomplete="off" spellcheck="false" style="font-family:var(--f-mono)"></label>
+    </div>
+    <div class="actions"><button class="btn primary" id="tCheck">Check code</button></div>
+    <details id="tBatchWrap">
+      <summary>Check a whole class at once</summary>
+      <div class="stack" style="margin-top:10px">
+        <p class="muted small">Paste one student per line: the name, then the code. A comma or a tab between them works, so you can paste two columns straight from a spreadsheet or Google Form responses.</p>
+        <textarea class="fld" id="tBatch" rows="6" placeholder="Jane Doe, ABCDE-FGHJK-…"></textarea>
+        <div class="actions"><button class="btn primary" id="tBatchBtn">Check all</button></div>
+      </div>
+    </details>
+    <div id="tOut" class="stack"></div>
+    <div class="actions"><button class="btn" id="tBack">Back to the house</button></div>
+  </section>
+
+  <p class="foot"><a href="#teacher" id="teacherLink">Teacher: read escape codes</a></p>
+</div>
+
+<!-- door question -->
+<div class="modal" id="qModal" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="qNum" id="qSheet">
+    <div class="dhead">
+      <div class="qhead"><h2 id="qNum"></h2><span class="tag" id="qTag" hidden></span></div>
+      <button class="btn" id="closeBtn">Back to the hallway</button>
+    </div>
+    <p class="directions" id="qDir"></p>
+    <div class="stack" id="qBody"></div>
+    <div class="actions">
+      <button class="btn primary" id="checkBtn">Check answer</button>
+      <button class="btn help" id="helpBtn">Help</button>
+      <button class="btn primary" id="nextBtn" hidden></button>
+    </div>
+    <p class="warnnote" id="helpWarn" hidden>Heads up: using More help or the full solution means you will solve a similar problem before you get this door's letter.</p>
+    <p class="msg" id="qMsg" role="status"></p>
+    <div class="helpbox" id="helpBox" hidden></div>
+  </div>
+</div>
+
+<!-- front door puzzle -->
+<div class="modal" id="fModal" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+    <div class="dhead"><h2 id="fTitle">The front door</h2><button class="btn" id="fClose">Back to the hallway</button></div>
+    <p>A spell seals the door. Tap your 13 letters in the right order to spell the magic phrase. Tap a filled box to take a letter back.</p>
+    <div class="slots" id="fSlots"></div>
+    <div class="tiles" id="fTiles"></div>
+    <div class="actions">
+      <button class="btn primary" id="fCheck">Break the spell</button>
+      <button class="btn" id="fClear">Clear</button>
+      <button class="btn help" id="fHint">Hint</button>
+    </div>
+    <p class="msg" id="fMsg" role="status"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div id="review"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- settings ---------- */
+var HELP_LIMIT = 2;      // help level that counts as "too much help" (2 = More help, 3 = full solution)
+var MAX_SIMILAR = 3;     // most similar problems a student does for one door
+var STORE = 'ia31-haunted-v1', ATTEMPTS = 'ia31-haunted-attempts', PREFS = 'ia31-haunted-sound';
+var SALT = 'IA31-haunted-house-v1';
+var ALPH = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+var PHRASE = 'SPOOKYSYSTEMS';
+var ORDER = [7,2,11,0,9,4,12,5,1,10,3,8,6];   // door n gives PHRASE[ORDER[n-1]]
+var AVATARS = [['🧙','Witch'],['🧛','Vampire'],['🧟','Zombie'],['💀','Skeleton'],['🎃','Pumpkin'],['🦇','Bat']];
+
+/* ---------- helpers ---------- */
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function fmt(n){ n = Math.round(n*1e6)/1e6; return n < 0 ? '−' + (-n) : String(n); }
+function norm(s){ return String(s).toLowerCase().replace(/[−–—]/g,'-').replace(/\s+/g,'').replace(/[()]/g,''); }
+function numOf(s){
+  s = norm(s); if(s === '') return NaN;
+  if(/^-?\d*\.?\d+$/.test(s)) return parseFloat(s);
+  var m = /^(-?\d+)\/(-?\d+)$/.exec(s); if(m && +m[2] !== 0) return (+m[1])/(+m[2]);
+  return NaN;
+}
+function near(sv, target, tol){ var v = numOf(sv); return !isNaN(v) && Math.abs(v - target) < (tol || 1e-9); }
+function pairText(p){ return '(' + fmt(p[0]) + ', ' + fmt(p[1]) + ')'; }
+function sat(p, e){ return e.a*p[0] + e.b*p[1] === e.c; }
+function term(c, v){ var a = Math.abs(c); return a === 1 ? '(' + v + ')' : a + '(' + v + ')'; }
+function expr(a, b, x, y){
+  var s = '';
+  [[a,x],[b,y]].forEach(function(p){
+    var c = p[0]; if(c === 0) return;
+    var body = term(c, fmt(p[1]));
+    if(s === '') s = (c < 0 ? '−' : '') + body; else s += (c < 0 ? ' − ' : ' + ') + body;
+  });
+  return s;
+}
+function gcd(a, b){ a = Math.abs(a); b = Math.abs(b); while(b){ var t = a % b; a = b; b = t; } return a || 1; }
+function prng(seed){ var a = seed >>> 0; return function(){ a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hash(s){ var h = 0x811c9dc5; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; }
+function lin(a, b){
+  var s = '';
+  if(a !== 0) s = a === 1 ? 'x' : a === -1 ? '−x' : fmt(a) + 'x';
+  if(b !== 0){
+    var by = Math.abs(b) === 1 ? 'y' : Math.abs(b) + 'y';
+    if(s === '') s = (b < 0 ? '−' : '') + by; else s += (b < 0 ? ' − ' : ' + ') + by;
+  }
+  return s;
+}
+function eqText(a, b, c, rev){ return rev ? fmt(c) + ' = ' + lin(a, b) : lin(a, b) + ' = ' + fmt(c); }
+function slopeTerm(p, q){
+  if(q === 1) return p === 1 ? 'x' : p === -1 ? '−x' : p === 0 ? '' : fmt(p) + 'x';
+  return (p < 0 ? '−' : '') + '(' + Math.abs(p) + '/' + q + ')x';
+}
+function slopeInt(p, q, b){
+  var st = slopeTerm(p, q), s = 'y = ';
+  if(!st) return s + fmt(b);
+  s += st; if(b > 0) s += ' + ' + b; else if(b < 0) s += ' − ' + (-b);
+  return s;
+}
+function fracStr(p, q){ return q === 1 ? fmt(p) : (p < 0 ? '−' : '') + Math.abs(p) + '/' + q; }
+function rhsText(ax, c){
+  var s = ''; if(ax !== 0) s = ax === 1 ? 'x' : ax === -1 ? '−x' : fmt(ax) + 'x';
+  if(c !== 0 || s === '') s = (s === '') ? fmt(c) : s + (c > 0 ? ' + ' : ' − ') + Math.abs(c);
+  return s;
+}
+function normName(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,''); }
+function load(k){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* ---------- the worksheet ---------- */
+function E(a, b, c, t){ return {a:a, b:b, c:c, t:t}; }
+var TYPE_NAME = {one:'One solution', none:'No solution', inf:'Infinitely many solutions'};
+var P = [
+  {n:1, kind:'two', pts:[[10,6],[3,4]], eqs:[E(1,1,16,'x + y = 16'), E(-1,1,2,'y − x = 2')]},
+  {n:2, kind:'two', pts:[[10,6],[3,4]], eqs:[E(3,-1,5,'3x − y = 5'), E(1,2,11,'x + 2y = 11')]},
+  {n:3, kind:'one', pt:[3,-2], eqs:[E(1,7,25,'x + 7y = 25'), E(5,1,11,'5x + y = 11')]},
+  {n:4, kind:'one', pt:[0,6], eqs:[E(-2,-5,-30,'−2x − 5y = −30'), E(-4,4,24,'−4x + 4y = 24')]},
+  {n:5, kind:'graph', eqs:['2y − 2x = −14','9 = 7x + y'], lines:[{m:1,b:-7},{m:-7,b:9}], type:'one', sol:[2,-5],
+   forms:['2y − 2x = −14 → add 2x to both sides: 2y = 2x − 14 → divide every term by 2: <b>y = x − 7</b>',
+          '9 = 7x + y → subtract 7x from both sides: <b>y = −7x + 9</b>'],
+   fin:'The slopes are different (1 and −7), so the lines cross once. Set the right sides equal: x − 7 = −7x + 9, so 8x = 16 and x = 2. Then y = 2 − 7 = −5.'},
+  {n:6, kind:'graph', eqs:['2 = x − y','−8x − y = −7'], lines:[{m:1,b:-2},{m:-8,b:7}], type:'one', sol:[1,-1],
+   forms:['2 = x − y → add y to both sides: y + 2 = x → subtract 2: <b>y = x − 2</b>',
+          '−8x − y = −7 → add 8x to both sides: −y = 8x − 7 → divide every term by −1: <b>y = −8x + 7</b>'],
+   fin:'The slopes are different (1 and −8), so the lines cross once. Set the right sides equal: x − 2 = −8x + 7, so 9x = 9 and x = 1. Then y = 1 − 2 = −1.'},
+  {n:7, kind:'graph', eqs:['y = 5','2x − y = 1'], lines:[{m:0,b:5},{m:2,b:-1}], type:'one', sol:[3,5],
+   forms:['y = 5 is a horizontal line: slope <b>0</b>, y-intercept <b>5</b>.',
+          '2x − y = 1 → subtract 2x from both sides: −y = −2x + 1 → divide every term by −1: <b>y = 2x − 1</b>'],
+   fin:'The slopes are different (0 and 2), so the lines cross once. Put y = 5 into y = 2x − 1: 5 = 2x − 1, so 2x = 6 and x = 3.'},
+  {n:8, kind:'graph', eqs:['y = 3x − 2','15x − 5y = 10'], lines:[{m:3,b:-2},{m:3,b:-2}], type:'inf',
+   forms:['y = 3x − 2 is already in slope-intercept form: slope <b>3</b>, y-intercept <b>−2</b>.',
+          '15x − 5y = 10 → subtract 15x from both sides: −5y = −15x + 10 → divide every term by −5: <b>y = 3x − 2</b>'],
+   fin:'Both equations are the same line, so every point on the line is a solution: infinitely many solutions.'},
+  {n:9, kind:'graph', eqs:['x − 2y = −6','y = (1/2)x − 8'], lines:[{m:0.5,b:3},{m:0.5,b:-8}], type:'none',
+   forms:['x − 2y = −6 → subtract x from both sides: −2y = −x − 6 → divide every term by −2: <b>y = (1/2)x + 3</b>',
+          'y = (1/2)x − 8 is already in slope-intercept form: slope <b>1/2</b>, y-intercept <b>−8</b>.'],
+   fin:'Same slope (1/2) but different y-intercepts (3 and −8). The lines are parallel and never meet, so there is no solution.'},
+  {n:10, kind:'graph', eqs:['3x − 5y = 20','y = 10x − 4'], lines:[{m:0.6,b:-4},{m:10,b:-4}], type:'one', sol:[0,-4],
+   forms:['3x − 5y = 20 → subtract 3x from both sides: −5y = −3x + 20 → divide every term by −5: <b>y = (3/5)x − 4</b>',
+          'y = 10x − 4 is already in slope-intercept form: slope <b>10</b>, y-intercept <b>−4</b>.'],
+   fin:'The slopes are different (3/5 and 10), so the lines cross once. Both lines have y-intercept −4, so they cross on the y-axis at (0, −4).'},
+  {n:11, kind:'desmos', eqs:['y = (1/4)x + 1','y = (5/4)x − 3'], lines:[{m:0.25,b:1},{m:1.25,b:-3}], type:'one', sol:[4,2],
+   forms:['y = (1/4)x + 1: slope <b>1/4</b>, y-intercept <b>1</b>.','y = (5/4)x − 3: slope <b>5/4</b>, y-intercept <b>−3</b>.'],
+   fin:'The slopes are different, so the lines cross once. Set the right sides equal: (1/4)x + 1 = (5/4)x − 3, so 4 = x. Then y = (1/4)(4) + 1 = 2.'},
+  {n:12, kind:'desmos', eqs:['x − 4y = −4','y = (1/4)x − 2'], lines:[{m:0.25,b:1},{m:0.25,b:-2}], type:'none',
+   forms:['x − 4y = −4 → subtract x from both sides: −4y = −x − 4 → divide every term by −4: <b>y = (1/4)x + 1</b>',
+          'y = (1/4)x − 2: slope <b>1/4</b>, y-intercept <b>−2</b>.'],
+   fin:'Same slope (1/4) but different y-intercepts (1 and −2). The lines are parallel, so there is no solution.'},
+  {n:13, kind:'desmos', eqs:['y = (1/3)x + 3','4x − 12y = −36'], lines:[{m:1/3,b:3},{m:1/3,b:3}], type:'inf',
+   forms:['y = (1/3)x + 3: slope <b>1/3</b>, y-intercept <b>3</b>.',
+          '4x − 12y = −36 → subtract 4x from both sides: −12y = −4x − 36 → divide every term by −12: <b>y = (1/3)x + 3</b>'],
+   fin:'Both equations are the same line, so there are infinitely many solutions.'}
+];
+var DIRECTIONS = {
+  two: 'Determine if the ordered pairs (10, 6) and (3, 4) are solutions to the system of linear equations. Show work to justify your answer.',
+  one: 'Determine if the ordered pair given is a solution to the system of equations. Show work to justify your answer.',
+  graph: 'Solve by graphing. Show work if an equation is not in slope-intercept form. List the answer as an ordered pair when there is one solution.',
+  desmos: 'Use Desmos to graph the system and determine the solution. If there is one solution, write your answer as an ordered pair.'
+};
+
+/* ---------- similar problems ---------- */
+function siMeta(p, q, b){ return {form:'si', text:slopeInt(p, q, b), sp:p, sq:q, sb:b}; }
+function stdMeta(p, q, b, k, rev){
+  var a = k*p, bb = -k*q, c = -k*q*b;
+  return {form:'std', text:eqText(a, bb, c, rev), a:a, b:bb, c:c, sp:p, sq:q, sb:b};
+}
+function formOf(m){
+  if(m.form === 'si') return m.text + ' is already in slope-intercept form: slope <b>' + fracStr(m.sp, m.sq) + '</b>, y-intercept <b>' + fmt(m.sb) + '</b>.';
+  var div = (m.b === 1) ? '' : ' → divide every term by ' + fmt(m.b);
+  return m.text + ' → move the x-term to the right side: ' + lin(0, m.b) + ' = ' + rhsText(-m.a, m.c) + div + ': <b>' + slopeInt(m.sp, m.sq, m.sb) + '</b>';
+}
+function okLine(p, q, b){ return q <= 10 && Math.abs(b) <= 10 && Math.abs(b + p) <= 10; }
+function finishGraph(n, metas, type, sol){
+  var m1 = metas[0], m2 = metas[1], fin;
+  if(type === 'one') fin = 'The slopes are different (' + fracStr(m1.sp, m1.sq) + ' and ' + fracStr(m2.sp, m2.sq) + '), so the lines cross once. Set the right sides equal: ' + slopeInt(m1.sp, m1.sq, m1.sb).slice(4) + ' = ' + slopeInt(m2.sp, m2.sq, m2.sb).slice(4) + '. Solving gives x = ' + fmt(sol[0]) + ', and then y = ' + fmt(sol[1]) + '.';
+  else if(type === 'none') fin = 'Same slope (' + fracStr(m1.sp, m1.sq) + ') but different y-intercepts (' + fmt(m1.sb) + ' and ' + fmt(m2.sb) + '). The lines are parallel and never meet, so there is no solution.';
+  else fin = 'Both equations simplify to ' + slopeInt(m1.sp, m1.sq, m1.sb) + ', the same line, so there are infinitely many solutions.';
+  return {n:n, kind: n >= 11 ? 'desmos' : 'graph', variant:true, eqs:metas.map(function(m){ return m.text; }),
+    lines:metas.map(function(m){ return {m:m.sp/m.sq, b:m.sb}; }), type:type, sol:sol, forms:metas.map(formOf), fin:fin};
+}
+function makeVariant(n, seed){
+  var o = P[n-1], rnd = prng(seed), t;
+  function ri(a, b){ return a + Math.floor(rnd()*(b - a + 1)); }
+  function pk(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+  function nz(a, b){ var v; do{ v = ri(a, b); }while(v === 0); return v; }
+  if(o.kind === 'two' || o.kind === 'one'){
+    for(t = 0; t < 400; t++){
+      var S = [ri(-6, 8), ri(-6, 8)];
+      var eqs = [0,1].map(function(){ var a = nz(-5, 5), b = nz(-5, 5); return {a:a, b:b, c:a*S[0] + b*S[1]}; });
+      if(eqs[0].a*eqs[1].b - eqs[1].a*eqs[0].b === 0) continue;
+      if(Math.abs(eqs[0].c) > 45 || Math.abs(eqs[1].c) > 45) continue;
+      eqs.forEach(function(e){ e.t = eqText(e.a, e.b, e.c, false); });
+      var onOne = function(k){
+        var e = eqs[k], g = gcd(e.a, e.b), dx = e.b/g, dy = -e.a/g, ss = [1,-1,2,-2];
+        for(var i = 0; i < ss.length; i++){ var p = [S[0] + ss[i]*dx, S[1] + ss[i]*dy]; if(Math.abs(p[0]) <= 12 && Math.abs(p[1]) <= 12) return p; }
+        return null;
+      };
+      var offBoth = function(){ for(var u = 0; u < 60; u++){ var p = [ri(-6, 10), ri(-6, 10)]; if(!sat(p, eqs[0]) && !sat(p, eqs[1])) return p; } return null; };
+      var wrongPt = function(){ return rnd() < 0.6 ? onOne(ri(0, 1)) : offBoth(); };
+      if(o.kind === 'one'){
+        var pt = rnd() < 0.5 ? S : wrongPt(); if(!pt) continue;
+        return {n:n, kind:'one', variant:true, pt:pt, eqs:eqs};
+      }
+      var out = pk(['none','A','B']), A, B;
+      if(out === 'none'){ A = onOne(0); B = rnd() < 0.5 ? onOne(1) : offBoth(); }
+      else { var w = wrongPt(); if(out === 'A'){ A = S; B = w; } else { A = w; B = S; } }
+      if(!A || !B || (A[0] === B[0] && A[1] === B[1])) continue;
+      return {n:n, kind:'two', variant:true, pts:[A, B], eqs:eqs};
+    }
+    return null;
+  }
+  var sx, sy, m1, m2, b1, b2, p, q, b, k, p1, p2, tt, metas;
+  for(t = 0; t < 800; t++){
+    if(n === 5 || n === 6 || n === 7){
+      sx = ri(-5, 5); sy = ri(-8, 8);
+      if(n === 7){ m1 = 0; m2 = nz(-5, 5); } else { m1 = nz(-5, 5); m2 = nz(-5, 5); if(m1 === m2) continue; }
+      b1 = sy - m1*sx; b2 = sy - m2*sx;
+      if(!okLine(m1, 1, b1) || !okLine(m2, 1, b2)) continue;
+      if(n === 5) metas = [stdMeta(m1, 1, b1, pk([-2,-3]), false), stdMeta(m2, 1, b2, -1, true)];
+      else if(n === 6) metas = [stdMeta(m1, 1, b1, 1, true), stdMeta(m2, 1, b2, pk([1,2]), false)];
+      else metas = [siMeta(0, 1, b1), stdMeta(m2, 1, b2, pk([1,-1]), false)];
+      return finishGraph(n, metas, 'one', [sx, sy]);
+    }
+    if(n === 10){
+      q = pk([2,3,4,5]); p = nz(-7, 7); if(gcd(p, q) !== 1) continue;
+      b = nz(-8, 8); k = nz(-6, 6); if(k*q === p) continue;
+      if(!okLine(p, q, b) || !okLine(k, 1, b)) continue;
+      return finishGraph(n, [stdMeta(p, q, b, pk([1,-1]), false), siMeta(k, 1, b)], 'one', [0, b]);
+    }
+    if(n === 11){
+      q = pk([2,3,4]); p1 = nz(-7, 7); p2 = nz(-7, 7);
+      if(p1 === p2 || gcd(p1, q) !== 1 || gcd(p2, q) !== 1) continue;
+      tt = pk([-2,-1,1,2]); sx = q*tt; sy = ri(-6, 6); b1 = sy - p1*tt; b2 = sy - p2*tt;
+      if(!okLine(p1, q, b1) || !okLine(p2, q, b2)) continue;
+      return finishGraph(n, [siMeta(p1, q, b1), siMeta(p2, q, b2)], 'one', [sx, sy]);
+    }
+    if(n === 9 || n === 12){
+      q = n === 9 ? pk([2,3]) : pk([3,4,5]); p = nz(-5, 5); if(gcd(p, q) !== 1) continue;
+      b1 = ri(-8, 8); b2 = ri(-8, 8); if(b1 === b2) continue;
+      if(!okLine(p, q, b1) || !okLine(p, q, b2)) continue;
+      return finishGraph(n, [stdMeta(p, q, b1, 1, false), siMeta(p, q, b2)], 'none', null);
+    }
+    if(n === 8){
+      m1 = nz(-4, 4); b = nz(-8, 8); if(!okLine(m1, 1, b)) continue;
+      return finishGraph(n, [siMeta(m1, 1, b), stdMeta(m1, 1, b, pk([2,3,4,5,-2,-3]), false)], 'inf', null);
+    }
+    if(n === 13){
+      q = pk([2,3,4]); p = nz(-5, 5); if(gcd(p, q) !== 1) continue;
+      b = nz(-8, 8); if(!okLine(p, q, b)) continue;
+      return finishGraph(n, [siMeta(p, q, b), stdMeta(p, q, b, pk([2,3,4,-2,-3]), false)], 'inf', null);
+    }
+  }
+  return null;
+}
+var VCACHE = {};
+function variantFor(n, seed){ var key = n + '~' + seed; if(!VCACHE[key]) VCACHE[key] = makeVariant(n, seed); return VCACHE[key]; }
+function inp(name, ph, label){ return '<input class="fld num" type="text" inputmode="text" id="f-' + name + '" data-f="' + name + '" autocomplete="off" autocapitalize="off" spellcheck="false"' + (ph ? ' placeholder="' + ph + '"' : '') + ' aria-label="' + esc(label || name) + '">'; }
+function sysHtml(list){ return '<div class="sys">' + list.map(function(t){ return '<div>' + t + '</div>'; }).join('') + '</div>'; }
+function workRow(e, name){
+  return '<div class="work"><span class="mathy">' + e.t + '</span><span>left side =</span>' + inp(name, '', 'Left side of ' + e.t) +
+    '<span class="muted small">compare with ' + fmt(e.c) + '</span></div>';
+}
+function typeRow(){
+  return '<label class="inline" for="f-type">How many solutions? <select class="fld" id="f-type" data-f="type"><option value="">Choose…</option><option value="one">One solution</option><option value="none">No solution</option><option value="inf">Infinitely many solutions</option></select></label>' +
+    '<label class="inline" for="f-sol">If there is one solution, write it as an ordered pair: ' + inp('sol', '(x, y)', 'Ordered pair solution').replace('class="fld num"', 'class="fld num" style="width:11ch"') + '</label>';
+}
+function bodyHtml(q){
+  var h = '';
+  if(q.kind === 'two'){
+    h += sysHtml(q.eqs.map(function(e){ return e.t; }));
+    h += '<p>Substitute each point into both equations. Type the value of the <b>left side</b> of each equation.</p>';
+    q.pts.forEach(function(p, k){
+      h += '<fieldset class="pt"><legend>Check ' + pairText(p) + '</legend>' + q.eqs.map(function(e, i){ return workRow(e, 'v' + k + i); }).join('') + '</fieldset>';
+    });
+    h += '<label class="inline" for="f-final">Which ordered pairs are solutions? <select class="fld" id="f-final" data-f="final"><option value="">Choose…</option><option value="none">Neither pair</option><option value="A">Only ' + pairText(q.pts[0]) + '</option><option value="B">Only ' + pairText(q.pts[1]) + '</option><option value="both">Both pairs</option></select></label>';
+  } else if(q.kind === 'one'){
+    h += '<p class="mathy" style="font-size:1.3rem">' + pairText(q.pt) + '</p>' + sysHtml(q.eqs.map(function(e){ return e.t; }));
+    h += '<p>Substitute x = ' + fmt(q.pt[0]) + ' and y = ' + fmt(q.pt[1]) + '. Type the value of the <b>left side</b> of each equation.</p>';
+    h += '<fieldset class="pt"><legend>Check ' + pairText(q.pt) + '</legend>' + q.eqs.map(function(e, i){ return workRow(e, 'v' + i); }).join('') + '</fieldset>';
+    h += '<label class="inline" for="f-final">Is ' + pairText(q.pt) + ' a solution of the system? <select class="fld" id="f-final" data-f="final"><option value="">Choose…</option><option value="yes">Yes</option><option value="no">No</option></select></label>';
+  } else if(q.kind === 'graph'){
+    h += sysHtml(q.eqs);
+    h += '<p class="step">Step 1: Show your work. Write each equation in slope-intercept form, y = mx + b.</p><p class="muted small">Type fractions like 1/2 or decimals like 0.5.</p>';
+    q.eqs.forEach(function(t, i){
+      h += '<div class="work"><span class="mathy">' + t + '</span><span>→ y =</span>' + inp('m' + i, 'm', 'Slope of equation ' + (i+1)) + '<span>x +</span>' + inp('b' + i, 'b', 'y-intercept of equation ' + (i+1)) + '</div>';
+    });
+    h += '<p class="step">Step 2: Graph both lines.</p><p class="muted small">Click two points on the first line (blue), then two points on the second line (red).</p>';
+    h += '<div class="plotwrap"><div class="plotbar"><span><i class="dot" style="background:var(--line1)"></i>' + q.eqs[0] + ' &nbsp; <i class="dot" style="background:var(--line2)"></i>' + q.eqs[1] + '</span><span class="coord" id="gcoord"></span></div>' +
+      '<canvas class="plot" id="gcanvas" tabindex="0" aria-label="Coordinate grid from −10 to 10. Click to place points for each line."></canvas>' +
+      '<div class="actions"><button class="btn" id="gundo" type="button">Undo point</button><button class="btn" id="gclear" type="button">Clear graph</button></div></div>';
+    h += '<p class="step">Step 3: Answer.</p>' + typeRow();
+  } else {
+    h += sysHtml(q.eqs);
+    h += '<p><a class="desmos" href="https://www.desmos.com/calculator" target="_blank" rel="noopener">Open Desmos in a new tab ↗</a></p>';
+    h += '<p class="muted small">Type both equations into Desmos. Click where the lines cross to see the point.</p>';
+    h += typeRow();
+  }
+  return h;
+}
+function formsList(q){ return '<ol>' + q.forms.map(function(f){ return '<li>' + f + '</li>'; }).join('') + '</ol>'; }
+function pairSolution(q){
+  var list = q.kind === 'two' ? q.pts : [q.pt], h = '';
+  list.forEach(function(p){
+    h += '<p><b>Check ' + pairText(p) + ':</b></p><ol>';
+    q.eqs.forEach(function(e){
+      var v = e.a*p[0] + e.b*p[1];
+      h += '<li>' + e.t + ' → ' + expr(e.a, e.b, p[0], p[1]) + ' = <b>' + fmt(v) + '</b>. Compare with ' + fmt(e.c) + ': <b>' + (v === e.c ? 'true' : 'false') + '</b></li>';
+    });
+    var ok = q.eqs.every(function(e){ return sat(p, e); });
+    h += '</ol><p>' + (ok ? 'Both equations are true, so ' + pairText(p) + ' <b>is</b> a solution.' : 'At least one equation is false, so ' + pairText(p) + ' is <b>not</b> a solution.') + '</p>';
+  });
+  return h;
+}
+function hint1(q){
+  if(q.kind === 'two' || q.kind === 'one') return '<p>Replace x and y with the numbers from the ordered pair, do the arithmetic, and compare the result with the right side of that equation. A point is a solution only if it makes <b>both</b> equations true.</p>';
+  if(q.kind === 'graph') return '<p>Get y by itself in each equation so it looks like y = mx + b. Whatever you do to one side, do to the other side. Then plot the y-intercept b on the y-axis and use the slope m (rise over run) to find a second point.</p>';
+  return '<p>Type each equation into Desmos exactly as written. If the lines cross once, click the crossing point to see its coordinates. If they never meet, there is no solution. If one line sits right on top of the other, there are infinitely many solutions.</p>';
+}
+function hint2(q){
+  if(q.kind === 'two' || q.kind === 'one'){
+    var p = q.kind === 'two' ? q.pts[0] : q.pt, e = q.eqs[0], v = e.a*p[0] + e.b*p[1];
+    return '<p>Here is the first one done for you. Put ' + pairText(p) + ' into ' + e.t + ': ' + expr(e.a, e.b, p[0], p[1]) + ' = ' + fmt(v) + '. ' +
+      (v === e.c ? 'That equals ' + fmt(e.c) + ', so this equation is true.' : 'That is not ' + fmt(e.c) + ', so this equation is false, which means ' + pairText(p) + ' is not a solution.') +
+      '</p><p>Now do the same thing for the rest.</p>';
+  }
+  return '<p>Here is each equation in slope-intercept form:</p>' + formsList(q) +
+    '<p>Now compare the lines. <b>Different slopes</b>: one solution where they cross. <b>Same slope, different y-intercepts</b>: no solution. <b>Same slope and same y-intercept</b>: infinitely many solutions.</p>';
+}
+function solutionHtml(q){
+  if(q.kind === 'two' || q.kind === 'one'){
+    var h = pairSolution(q);
+    if(q.kind === 'two'){
+      var v = q.pts.map(function(p){ return q.eqs.every(function(e){ return sat(p, e); }); });
+      h += '<p>Answer: <b>' + (v[0] && v[1] ? 'both pairs' : v[0] ? 'only ' + pairText(q.pts[0]) : v[1] ? 'only ' + pairText(q.pts[1]) : 'neither pair') + '</b>.</p>';
+    }
+    return h;
+  }
+  var ans = q.type === 'one' ? 'one solution, <b>' + pairText(q.sol) + '</b>' : '<b>' + TYPE_NAME[q.type].toLowerCase() + '</b>';
+  return '<ol>' + q.forms.map(function(f){ return '<li>' + f + '</li>'; }).join('') + '<li>' + q.fin + '</li></ol><p>Answer: ' + ans + '.</p><canvas class="plot small" id="hcanvas" aria-label="Graph of both lines"></canvas>';
+}
+function drawBoard(cv, q, o){
+  if(!cv || !cv.getContext) return;
+  var ctx = cv.getContext('2d'); if(!ctx) return;
+  var size = cv.clientWidth || 300, dpr = window.devicePixelRatio || 1;
+  cv.width = cv.height = Math.round(size*dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var L = 11, sc = size/(2*L);
+  function X(x){ return (x + L)*sc; } function Y(y){ return (L - y)*sc; }
+  var cs = getComputedStyle(document.documentElement);
+  function css(n){ return (o.pal && o.pal[n]) || cs.getPropertyValue(n).trim(); }
+  ctx.clearRect(0, 0, size, size);
+  ctx.lineWidth = 1; ctx.strokeStyle = css('--plot-grid');
+  for(var i = -10; i <= 10; i++){
+    ctx.beginPath(); ctx.moveTo(X(i), Y(-10.5)); ctx.lineTo(X(i), Y(10.5)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(-10.5), Y(i)); ctx.lineTo(X(10.5), Y(i)); ctx.stroke();
+  }
+  ctx.strokeStyle = css('--axis'); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), size); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(size, Y(0)); ctx.stroke();
+  ctx.fillStyle = css('--axis'); ctx.font = Math.max(9, size/36) + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for(var t = -10; t <= 10; t += 2){ if(t !== 0) ctx.fillText(String(t).replace('-', '−'), X(t), Y(0) + 3); }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for(var u = -10; u <= 10; u += 2){ if(u !== 0) ctx.fillText(String(u).replace('-', '−'), X(0) - 4, Y(u)); }
+  function seg(ln, color, w, dash){
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(X(-L), Y(ln.m*-L + ln.b)); ctx.lineTo(X(L), Y(ln.m*L + ln.b)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  var same = Math.abs(q.lines[0].m - q.lines[1].m) < 1e-9 && Math.abs(q.lines[0].b - q.lines[1].b) < 1e-9;
+  if(o.answer){
+    seg(q.lines[0], css('--line1'), same ? 6 : 3);
+    seg(q.lines[1], css('--line2'), same ? 2 : 3, same ? [7,6] : null);
+  }
+  var Pt = o.pts || [];
+  function pseg(p1, p2, color){
+    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath();
+    if(p1[0] === p2[0]){ ctx.moveTo(X(p1[0]), Y(-L)); ctx.lineTo(X(p1[0]), Y(L)); }
+    else { var m = (p2[1] - p1[1])/(p2[0] - p1[0]); ctx.moveTo(X(-L), Y(p1[1] + m*(-L - p1[0]))); ctx.lineTo(X(L), Y(p1[1] + m*(L - p1[0]))); }
+    ctx.stroke();
+  }
+  if(Pt.length >= 2) pseg(Pt[0], Pt[1], css('--line1'));
+  if(Pt.length >= 4) pseg(Pt[2], Pt[3], css('--line2'));
+  ctx.font = 'bold ' + Math.max(10, size/32) + 'px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  Pt.forEach(function(pt, i){
+    ctx.fillStyle = i < 2 ? css('--line1') : css('--line2'); ctx.beginPath(); ctx.arc(X(pt[0]), Y(pt[1]), 6, 0, 6.2832); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = css('--plot-bg'); ctx.stroke();
+    ctx.fillStyle = css('--ink'); ctx.fillText(pairText(pt), X(pt[0]) + 9, Y(pt[1]) - 6);
+  });
+  if(o.answer && q.type === 'one'){
+    ctx.strokeStyle = css('--ok'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(X(q.sol[0]), Y(q.sol[1]), 9, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = css('--ink'); ctx.font = 'bold ' + Math.max(10, size/30) + 'px sans-serif';
+    ctx.fillText(pairText(q.sol), X(q.sol[0]) + 12, Y(q.sol[1]) - 6);
+  }
+}
+function lineFrom(a, b){ if(a[0] === b[0]) return null; var m = (b[1] - a[1])/(b[0] - a[0]); return {m:m, b:a[1] - m*a[0]}; }
+function evaluate(q){
+  var marks = {}, blank = false;
+  function fld(n){ return $('qBody').querySelector('[data-f="' + n + '"]'); }
+  function need(n, test){ var el = fld(n); if(!el.value.trim()){ blank = true; marks[n] = null; } else marks[n] = !!test(el.value); }
+  if(q.kind === 'two'){
+    q.pts.forEach(function(p, k){ q.eqs.forEach(function(e, i){ need('v' + k + i, function(v){ return near(v, e.a*p[0] + e.b*p[1]); }); }); });
+    var val = q.pts.map(function(p){ return q.eqs.every(function(e){ return sat(p, e); }); });
+    var exp = val[0] && val[1] ? 'both' : val[0] ? 'A' : val[1] ? 'B' : 'none';
+    need('final', function(v){ return v === exp; });
+  } else if(q.kind === 'one'){
+    q.eqs.forEach(function(e, i){ need('v' + i, function(v){ return near(v, e.a*q.pt[0] + e.b*q.pt[1]); }); });
+    var truth = q.eqs.every(function(e){ return sat(q.pt, e); }) ? 'yes' : 'no';
+    need('final', function(v){ return v === truth; });
+  } else {
+    if(q.kind === 'graph'){
+      q.lines.forEach(function(Ln, i){
+        need('m' + i, function(v){ return near(v, Ln.m, 0.006); });
+        need('b' + i, function(v){ return near(v, Ln.b, 0.006); });
+      });
+      if(pts.length < 4){ blank = true; marks.graph = null; }
+      else {
+        var ls = [lineFrom(pts[0], pts[1]), lineFrom(pts[2], pts[3])];
+        var same = function(a, t){ return a && Math.abs(a.m - t.m) < 1e-6 && Math.abs(a.b - t.b) < 1e-6; };
+        var uniq = q.lines.filter(function(t, i, arr){ return arr.findIndex(function(u){ return same(u, t); }) === i; });
+        var idx = ls.map(function(a){ return uniq.findIndex(function(t){ return same(a, t); }); });
+        marks.graph = idx.every(function(i){ return i >= 0; }) && uniq.every(function(t, i){ return idx.indexOf(i) >= 0; });
+      }
+    }
+    need('type', function(v){ return v === q.type; });
+    if(fld('type').value === 'one') need('sol', function(v){ return q.type === 'one' && norm(v) === q.sol[0] + ',' + q.sol[1]; });
+  }
+  Object.keys(marks).forEach(function(n){
+    var el = n === 'graph' ? $('gcanvas') : fld(n); if(!el) return;
+    el.classList.remove('ok','bad','missing');
+    if(marks[n] === null) el.classList.add('missing');
+    else if(!blank) el.classList.add(marks[n] ? 'ok' : 'bad');
+  });
+  return {blank:blank, ok:!blank && Object.keys(marks).every(function(n){ return marks[n] === true; })};
+}
+function pushBits(arr, v, n){ for(var k = n - 1; k >= 0; k--) arr.push((v >>> k) & 1); }
+function readBits(arr, pos, n){ var v = 0; for(var k = 0; k < n; k++) v = v*2 + arr[pos + k]; return v; }
+var CODE_BITS = 250, BODY_BITS = 224;
+function makeCode(st){
+  var b = [], nm = normName(st.name);
+  pushBits(b, 1, 3);
+  pushBits(b, Math.min(15, st.attempt || 1), 4);
+  pushBits(b, Math.min(255, Math.max(0, Math.round((st.finishedAt - st.startedAt)/60000))), 8);
+  pushBits(b, 1, 1);
+  st.rec.forEach(function(r){
+    pushBits(b, Math.min(15, r.w), 4); pushBits(b, r.h, 2); pushBits(b, r.solved ? 1 : 0, 1);
+    pushBits(b, Math.min(3, r.sc), 2); pushBits(b, Math.min(15, r.sw), 4); pushBits(b, r.sok ? 1 : 0, 1); pushBits(b, r.sh, 2);
+  });
+  pushBits(b, hash(SALT + '|' + nm + '|' + b.join('')) % 67108864, 26);
+  var ks = prng(hash(SALT + '#' + nm));
+  for(var i = 0; i < b.length; i++) b[i] ^= (ks() < 0.5 ? 1 : 0);
+  var s = '';
+  for(i = 0; i < CODE_BITS; i += 5) s += ALPH[readBits(b, i, 5)];
+  return s.match(/.{5}/g).join('-');
+}
+function readCode(name, code){
+  var nm = normName(name);
+  if(nm.length < 2) return {err:'Type the student’s name.'};
+  var c = String(code).toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^0-9A-Z]/g, '');
+  if(c.length !== CODE_BITS/5) return {err:'That code is not the right length. It should be 50 letters and numbers.'};
+  var b = [];
+  for(var i = 0; i < c.length; i++){ var v = ALPH.indexOf(c[i]); if(v < 0) return {err:'That code has a letter that never appears in codes (' + c[i] + ').'}; pushBits(b, v, 5); }
+  var ks = prng(hash(SALT + '#' + nm));
+  for(i = 0; i < b.length; i++) b[i] ^= (ks() < 0.5 ? 1 : 0);
+  var body = b.slice(0, BODY_BITS);
+  if(readBits(b, BODY_BITS, 26) !== hash(SALT + '|' + nm + '|' + body.join('')) % 67108864 || readBits(b, 0, 3) !== 1)
+    return {err:'This code does not match that name. Check the spelling of the name, or the code was typed wrong.'};
+  var out = {attempt:readBits(b, 3, 4), minutes:readBits(b, 7, 8), rec:[]}, pos = 16;
+  for(i = 0; i < P.length; i++){
+    out.rec.push({w:readBits(b, pos, 4), h:readBits(b, pos + 4, 2), solved:!!readBits(b, pos + 6, 1), sc:readBits(b, pos + 7, 2),
+                  sw:readBits(b, pos + 9, 4), sok:!!readBits(b, pos + 13, 1), sh:readBits(b, pos + 14, 2)});
+    pos += 16;
+  }
+  return out;
+}
+function outcome(r){
+  if(r.solved && r.h < HELP_LIMIT) return 'own';
+  if(r.sok) return 'rec';
+  return 'need';
+}
+var OUT_LABEL = {own:'On own', rec:'After help, then passed a similar problem', need:'Still needs work'};
+var HELP_LABEL = ['None', 'Hint', 'More help', 'Full solution'];
+function summarize(rs){
+  var s = {own:0, rec:0, need:0, wrong:0, helped:0, needList:[]};
+  rs.forEach(function(r, i){ var o = outcome(r); s[o]++; if(o === 'need') s.needList.push(i + 1); s.wrong += r.w + r.sw; if(r.h || r.sh) s.helped++; });
+  return s;
+}
+
+function armButton(btn, idleText, armedText, action){
+  if(btn.dataset.armed === '1'){ btn.dataset.armed = '0'; btn.classList.remove('armed'); btn.textContent = idleText; action(); return; }
+  btn.dataset.armed = '1'; btn.classList.add('armed'); btn.textContent = armedText;
+  setTimeout(function(){ if(btn.dataset.armed === '1'){ btn.dataset.armed = '0'; btn.classList.remove('armed'); btn.textContent = idleText; } }, 4000);
+}
+function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+function table(heads, rows){
+  var wrap = el('div', 'tablewrap'), t = el('table', 'rt'), tr = el('tr'), tb = el('tbody'), th = el('thead');
+  heads.forEach(function(h){ tr.appendChild(el('th', null, h)); }); th.appendChild(tr); t.appendChild(th);
+  rows.forEach(function(r){ var row = el('tr'); r.forEach(function(c){ var td = el('td'); if(c && c.nodeType) td.appendChild(c); else td.textContent = String(c); row.appendChild(td); }); tb.appendChild(row); });
+  t.appendChild(tb); wrap.appendChild(t); return wrap;
+}
+function pill(o){ return el('span', 'pill ' + o, OUT_LABEL[o]); }
+function detailTable(d){
+  return table(['Problem', 'Result', 'Wrong tries', 'Help used', 'Similar problems'], d.rec.map(function(r, i){
+    var res = r.solved ? (r.h >= HELP_LIMIT ? 'Correct, with a lot of help' : (r.w ? 'Correct after ' + r.w + ' wrong ' + (r.w === 1 ? 'try' : 'tries') : 'Correct on first try')) : 'Viewed the full solution';
+    var sim = r.sc ? r.sc + ' tried · ' + r.sw + ' wrong · help: ' + HELP_LABEL[r.sh] + ' · ' + (r.sok ? 'passed one on own' : 'did not pass one on own') : '—';
+    var cell = el('div', 'stack'); cell.style.gap = '4px'; cell.appendChild(pill(outcome(r))); cell.appendChild(el('span', 'small muted', res));
+    return ['#' + (i + 1), cell, r.w, HELP_LABEL[r.h], sim];
+  }));
+}
+function studentReport(name, d){
+  var box = el('div', 'report'), s = summarize(d.rec);
+  box.appendChild(el('h3', null, name));
+  var stats = el('div', 'stats');
+  [[s.own + ' / 13', 'solved on own'], [s.rec, 'passed a similar problem after help'], [s.need, 'still need work' + (s.needList.length ? ' (#' + s.needList.join(', #') + ')' : '')],
+   [s.wrong, 'wrong tries in all'], [d.minutes + (d.minutes >= 255 ? '+' : '') + ' min', 'time spent'], [d.attempt + (d.attempt >= 15 ? '+' : ''), 'attempt number on that device']].forEach(function(x){
+    var c = el('div', 'stat'); c.appendChild(el('b', null, x[0])); c.appendChild(el('span', null, x[1])); stats.appendChild(c);
+  });
+  box.appendChild(stats); box.appendChild(detailTable(d));
+  return box;
+}
+$('tCheck').onclick = function(){
+  var out = $('tOut'); out.textContent = '';
+  var name = $('tName').value.trim(), d = readCode(name, $('tCode').value);
+  if(d.err){ out.appendChild(el('p', 'msg warn', d.err)); return; }
+  out.appendChild(studentReport(name, d));
+};
+$('tBatchBtn').onclick = function(){
+  var out = $('tOut'); out.textContent = '';
+  var lines = $('tBatch').value.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean), rows = [], good = [];
+  lines.forEach(function(line){
+    var m = /([0-9A-Za-z]{5}(?:[-\s][0-9A-Za-z]{5}){9}|[0-9A-Za-z]{50})/.exec(line);
+    var name = m ? line.replace(m[0], '').replace(/^[\s,;\t]+|[\s,;\t]+$/g, '').replace(/^name:\s*/i, '').replace(/(3-1 practice|haunted house) code:\s*$/i, '').trim() : line;
+    var d = m ? readCode(name, m[0]) : {err:'No code found on this line.'};
+    if(d.err){ rows.push([name || '(no name)', el('span', 'pill invalid', 'Code problem'), d.err, '', '', '']); return; }
+    var s = summarize(d.rec);
+    rows.push([name, el('span', 'pill own', s.own + ' / 13 on own'), s.rec, s.needList.length ? '#' + s.needList.join(', #') : 'None', s.wrong, d.minutes + ' min']);
+    good.push([name, d]);
+  });
+  if(!rows.length){ out.appendChild(el('p', 'msg warn', 'Paste at least one line with a name and a code.')); return; }
+  out.appendChild(el('h3', null, 'Class summary · ' + rows.length + ' student' + (rows.length === 1 ? '' : 's')));
+  out.appendChild(table(['Name', 'Solved on own', 'Passed after help', 'Still needs work', 'Wrong tries', 'Time'], rows));
+  good.forEach(function(g){
+    var det = el('details'), sum = el('summary', null, 'Details for ' + g[0]);
+    det.appendChild(sum); det.appendChild(studentReport(g[0], g[1])); out.appendChild(det);
+  });
+};
+
+/* ---------- state ---------- */
+var S = null, pts = [], pickAv = 0;
+function freshCur(){ return {sim:null, h:0, phase:'ask', msg:null}; }
+function freshRec(){ return {w:0, h:0, solved:false, sc:0, sw:0, sok:false, sh:0, done:false, cur:freshCur()}; }
+function persist(){ if(S) save(STORE, S); }
+function rec(){ return S.rec[S.open]; }
+function C(){ return rec().cur; }
+function curQ(){ var c = C(); return c.sim ? variantFor(S.open + 1, c.sim) : P[S.open]; }
+function letterOf(i){ return PHRASE[ORDER[i]]; }
+function doneCount(){ return S ? S.rec.filter(function(r){ return r.done; }).length : 0; }
+function say(text, cls){ C().msg = text ? {text:text, cls:cls || ''} : null; }
+
+var toastTimer = 0;
+function toast(text, ms){
+  var t = $('toast'); t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, ms || 4500);
+}
+
+/* ---------- views ---------- */
+var VIEWS = ['vStart','vHouse','vDone','vTeacher'];
+function modalOpen(){ return !$('qModal').hidden || !$('fModal').hidden; }
+function closeModals(){ $('qModal').hidden = true; $('fModal').hidden = true; document.body.style.overflow = ''; if(S) S.open = null; }
+function show(v){
+  VIEWS.forEach(function(id){ $(id).hidden = (id !== v); });
+  $('teacherLink').hidden = (v === 'vTeacher');
+  var who = $('who');
+  if(S && S.name && (v === 'vHouse' || v === 'vDone')){ who.hidden = false; who.innerHTML = 'Exploring as <b>' + esc(S.name) + '</b> ' + AVATARS[S.av || 0][0]; }
+  else who.hidden = true;
+  if(v === 'vHouse'){ renderPieces(); $('status').textContent = nearInfo(); kick(); }
+}
+function route(){
+  closeModals();
+  if(location.hash === '#teacher'){ show('vTeacher'); return; }
+  if(!S){ show('vStart'); return; }
+  if(S.finishedAt){ renderDone(); show('vDone'); return; }
+  show('vHouse');
+}
+
+/* ---------- start ---------- */
+function renderAvatars(){
+  var box = $('avs'); box.textContent = '';
+  AVATARS.forEach(function(a, i){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'av'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === pickAv ? 'true' : 'false');
+    b.innerHTML = '<span aria-hidden="true">' + a[0] + '</span>' + a[1];
+    b.onclick = function(){ pickAv = i; renderAvatars(); box.children[i].focus(); };
+    box.appendChild(b);
+  });
+}
+$('startBtn').onclick = function(){
+  var name = $('nameIn').value.replace(/[\u0000-\u001f]/g,'').replace(/\s+/g,' ').trim();
+  if(normName(name).length < 2 || name.indexOf(' ') < 0){ $('startMsg').textContent = 'Type your first and last name.'; $('nameIn').focus(); return; }
+  var attempt = (load(ATTEMPTS) || 0) + 1; save(ATTEMPTS, attempt);
+  S = {name:name, av:pickAv, rec:P.map(freshRec), open:null, pos:START.slice(), startedAt:Date.now(), finishedAt:null, attempt:attempt};
+  persist(); resetPlayer(); startMusic(); sfx('creak');
+  show('vHouse'); window.scrollTo(0, 0); $('house').focus({preventScroll:true});
+  toast('The door slams behind you. Find the 13 glowing doors.');
+};
+$('nameIn').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('startBtn').click(); });
+
+/* ---------- letter pieces ---------- */
+function renderPieces(){
+  if(!S) return;
+  var box = $('pieces'); box.textContent = '';
+  S.rec.forEach(function(r, i){
+    var d = document.createElement('div');
+    d.className = 'piece' + (r.done ? ' got' + (outcome(r) === 'own' ? '' : ' helped') : '');
+    d.textContent = r.done ? letterOf(i) : i + 1;
+    d.title = 'Door ' + (i + 1) + (r.done ? ': letter ' + letterOf(i) : ': still locked');
+    box.appendChild(d);
+  });
+  $('count').innerHTML = '<b>' + doneCount() + '</b> / 13 letters';
+}
+
+/* ---------- door question panel ---------- */
+function openDoor(i){
+  var r = S.rec[i];
+  if(r.done){ toast('Door ' + (i + 1) + ' is already open. Its letter is “' + letterOf(i) + '”.'); return; }
+  S.open = i; pts = []; persist();
+  sfx('creak');
+  $('qModal').hidden = false; $('qModal').scrollTop = 0; document.body.style.overflow = 'hidden';
+  renderItem();
+  setTimeout(function(){ var f = $('qBody').querySelector('input,select'); (f || $('checkBtn')).focus({preventScroll:true}); }, 40);
+}
+function closeDoor(){
+  $('qModal').hidden = true; document.body.style.overflow = '';
+  if(S){ S.open = null; persist(); }
+  $('house').focus({preventScroll:true});
+}
+$('closeBtn').onclick = closeDoor;
+
+function renderItem(){
+  var q = curQ(), r = rec(), c = C();
+  $('qNum').textContent = 'Door ' + (S.open + 1) + (c.sim ? ': a similar problem' : '');
+  var tag = $('qTag');
+  if(c.sim){ tag.hidden = false; tag.textContent = 'Practice ' + r.sc + ' of up to ' + MAX_SIMILAR; } else tag.hidden = true;
+  $('qDir').textContent = (q.kind === 'two' && q.variant) ? 'Determine if the ordered pairs ' + pairText(q.pts[0]) + ' and ' + pairText(q.pts[1]) + ' are solutions to the system of linear equations. Show work to justify your answer.' : DIRECTIONS[q.kind];
+  $('qBody').innerHTML = bodyHtml(q);
+  if(q.kind === 'graph') bindGraph();
+  renderHelp();
+  renderControls();
+}
+function nextStep(){
+  var r = rec(), c = C();
+  if(!c.sim) return r.h >= HELP_LIMIT ? 'similar' : 'next';
+  if(r.sok) return 'next';
+  return r.sc < MAX_SIMILAR ? 'similar' : 'next';
+}
+function renderControls(){
+  var c = C(), done = c.phase === 'done';
+  $('checkBtn').disabled = done;
+  $('helpBtn').disabled = done || c.h >= 3;
+  $('helpBtn').textContent = ['Help', 'More help', 'Show full solution', 'Full solution shown'][c.h];
+  $('helpWarn').hidden = !(c.h === 1 && !done);
+  var nb = $('nextBtn');
+  if(done){
+    nb.hidden = false;
+    nb.textContent = nextStep() === 'similar' ? (c.sim ? 'Try another similar problem →' : 'Try a similar problem →') : '🗝️ Take the letter';
+  } else nb.hidden = true;
+  var m = $('qMsg');
+  m.textContent = c.msg ? c.msg.text : ''; m.className = 'msg' + (c.msg && c.msg.cls ? ' ' + c.msg.cls : '');
+  if(done) $('qBody').querySelectorAll('input,select,button').forEach(function(el){ el.disabled = true; });
+}
+function renderHelp(){
+  var q = curQ(), c = C(), box = $('helpBox'), h = '';
+  if(c.h >= 1) h += '<section><h4>Hint</h4>' + hint1(q) + '</section>';
+  if(c.h >= 2) h += '<section><h4>More help</h4>' + hint2(q) + '</section>';
+  if(c.h >= 3) h += '<section><h4>Full solution</h4>' + solutionHtml(q) + '</section>';
+  box.innerHTML = h; box.hidden = !h;
+  if(c.h >= 3 && q.lines) requestAnimationFrame(function(){ drawBoard($('hcanvas'), q, {answer:true}); });
+}
+$('helpBtn').onclick = function(){
+  var c = C(), r = rec();
+  if(c.phase !== 'ask' || c.h >= 3) return;
+  c.h++;
+  if(c.sim) r.sh = Math.max(r.sh, c.h); else r.h = Math.max(r.h, c.h);
+  if(c.h >= 3){
+    c.phase = 'done';
+    say(nextStep() === 'similar' ? 'Read through the solution, then solve a similar problem on your own to earn the letter.' : 'Read through the solution, then take the letter. Your teacher will see that this door needed extra help.', 'info');
+  } else say('', '');
+  sfx('help');
+  persist(); renderHelp(); renderControls();
+  $('helpBox').scrollIntoView({block:'nearest', behavior:'smooth'});
+};
+
+/* ---------- graphing inside a door ---------- */
+function redrawInput(){ var cv = $('gcanvas'); if(cv && S && S.open != null && curQ().kind === 'graph') drawBoard(cv, curQ(), {pts:pts, answer:false}); }
+function bindGraph(){
+  var cv = $('gcanvas'); if(!cv) return;
+  function toGrid(e){
+    var r = cv.getBoundingClientRect(), L = 11;
+    var x = Math.round(((e.clientX - r.left)/r.width)*2*L - L), y = Math.round(L - ((e.clientY - r.top)/r.height)*2*L);
+    return [Math.max(-10, Math.min(10, x)), Math.max(-10, Math.min(10, y))];
+  }
+  function touched(){ cv.classList.remove('ok','bad','missing'); redrawInput(); }
+  cv.addEventListener('click', function(e){
+    if(C().phase !== 'ask') return;
+    var g = toGrid(e);
+    if(pts.length >= 4){ say('You already have 4 points. Use Undo point or Clear graph to change them.', 'info'); renderControls(); return; }
+    if(pts.length % 2 === 1 && pts[pts.length-1][0] === g[0] && pts[pts.length-1][1] === g[1]) return;
+    pts.push(g); touched();
+  });
+  cv.addEventListener('pointermove', function(e){ $('gcoord').textContent = pairText(toGrid(e)); });
+  cv.addEventListener('pointerleave', function(){ $('gcoord').textContent = ''; });
+  $('gundo').onclick = function(){ if(C().phase === 'ask'){ pts.pop(); touched(); } };
+  $('gclear').onclick = function(){ if(C().phase === 'ask'){ pts = []; touched(); } };
+  requestAnimationFrame(redrawInput);
+}
+window.addEventListener('resize', function(){
+  if($('qModal').hidden || !S || S.open == null) return;
+  redrawInput();
+  if(C().h >= 3 && curQ().lines) drawBoard($('hcanvas'), curQ(), {answer:true});
+});
+
+/* ---------- checking ---------- */
+$('checkBtn').onclick = function(){
+  var c = C();
+  if(c.phase !== 'ask') return;
+  var q = curQ(), r = rec(), res = evaluate(q);
+  if(res.blank){
+    say(q.kind === 'graph' ? 'Finish the boxes outlined with dashes first. The graph needs 2 points for each line.' : 'Fill in the boxes outlined with dashes first.', 'info');
+    renderControls(); return;
+  }
+  if(res.ok){
+    c.phase = 'done';
+    if(!c.sim){
+      r.solved = true;
+      say(r.h >= HELP_LIMIT ? 'Correct! You used a lot of help here, so solve a similar problem on your own to earn the letter.' : (r.w ? 'Correct! Nice job fixing your work. The lock clicks open.' : 'Correct on the first try! The lock clicks open.'), 'good');
+    } else if(c.h < HELP_LIMIT){
+      r.sok = true; say('Correct! You solved the similar problem on your own. The lock clicks open.', 'good');
+    } else {
+      say(r.sc < MAX_SIMILAR ? 'Correct, but with a lot of help. Try one more similar problem.' : 'Correct. Take the letter. Your teacher will see that this door needed extra help.', 'good');
+    }
+    sfx('correct');
+    if(q.kind === 'graph') drawBoard($('gcanvas'), q, {pts:pts, answer:false});
+  } else {
+    if(c.sim) r.sw++; else r.w++;
+    sfx('wrong');
+    say('Not quite. Look again at the boxes outlined in red.' + ((c.sim || r.w >= 2) && c.h < 3 ? ' Press Help if you are stuck.' : ''), 'warn');
+  }
+  persist(); renderControls();
+};
+$('qBody').addEventListener('input', function(e){ if(e.target.classList) e.target.classList.remove('ok','bad','missing'); });
+$('qBody').addEventListener('change', function(e){ if(e.target.classList) e.target.classList.remove('ok','bad','missing'); });
+$('qBody').addEventListener('keydown', function(e){ if(e.key === 'Enter' && e.target.tagName === 'INPUT') $('checkBtn').click(); });
+
+$('nextBtn').onclick = function(){
+  var c = C(), r = rec();
+  if(c.phase !== 'done') return;
+  if(nextStep() === 'similar'){
+    r.sc++;
+    var seed, v = null;
+    for(var t = 0; t < 10 && !v; t++){ seed = Math.floor(Math.random()*1e9) + 1; v = variantFor(S.open + 1, seed); }
+    r.cur = {sim:seed, h:0, phase:'ask', msg:null}; pts = [];
+    persist(); sfx('whoosh'); renderItem(); $('qModal').scrollTop = 0;
+    return;
+  }
+  var i = S.open;
+  r.done = true; r.cur = freshCur();
+  closeDoor(); renderPieces(); sfx('piece'); sparkle(DOOR_POS[i]);
+  var n = doneCount();
+  toast('You got the letter “' + letterOf(i) + '” from door ' + (i + 1) + '. ' + (n === 13 ? 'That is all 13! Go to the front door at the bottom of the house.' : (13 - n) + (13 - n === 1 ? ' door' : ' doors') + ' to go.'), 6000);
+  $('status').textContent = nearInfo();
+};
+
+/* ---------- sound: everything is synthesized, no files ---------- */
+var SND = load(PREFS) || {music:true, sfx:true};
+var AC = null, mGain, mBus, sGain, noiseBuf, musicOn = false, mTimer = 0, mNext = 0, mStep = 0, wind = null;
+function audio(){
+  if(!AC){
+    var Ctor = window.AudioContext || window.webkitAudioContext; if(!Ctor) return null;
+    try{ AC = new Ctor(); }catch(e){ return null; }
+    var comp = AC.createDynamicsCompressor(); comp.connect(AC.destination);
+    mGain = AC.createGain(); mGain.gain.value = 0; mGain.connect(comp);
+    mBus = AC.createGain(); mBus.connect(mGain);
+    var dl = AC.createDelay(1), fb = AC.createGain(), lp = AC.createBiquadFilter();
+    dl.delayTime.value = 0.36; fb.gain.value = 0.33; lp.type = 'lowpass'; lp.frequency.value = 1600;
+    mBus.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(mGain);
+    sGain = AC.createGain(); sGain.gain.value = 0.7; sGain.connect(comp);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
+    var d = noiseBuf.getChannelData(0); for(var i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1;
+  }
+  if(AC.state === 'suspended'){ try{ AC.resume(); }catch(e){} }
+  return AC;
+}
+function note(n){
+  var m = /^([A-G])(#|b)?(\d)$/.exec(n);
+  var midi = 12*(+m[3] + 1) + {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  return 440*Math.pow(2, (midi - 69)/12);
+}
+function tone(o){
+  var a = AC, t = o.t || a.currentTime, osc = a.createOscillator(), g = a.createGain(), src = osc;
+  var dur = o.dur, at = o.at || 0.01, rl = o.rl || 0.12, pk = o.g || 0.1, sus = o.sus == null ? 1 : o.sus;
+  osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(o.f, t);
+  if(o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t + dur + rl);
+  if(o.vib){
+    var l = a.createOscillator(), lg = a.createGain();
+    l.frequency.value = o.vib; lg.gain.value = o.f*(o.vd || 0.012); l.connect(lg); lg.connect(osc.frequency);
+    l.start(t); l.stop(t + dur + rl + 0.05);
+  }
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk, t + at);
+  g.gain.linearRampToValueAtTime(pk*sus, t + Math.max(at, dur)); g.gain.linearRampToValueAtTime(0, t + Math.max(at, dur) + rl);
+  if(o.lp){ var f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; osc.connect(f); src = f; }
+  src.connect(g); g.connect(o.dest || sGain);
+  osc.start(t); osc.stop(t + Math.max(at, dur) + rl + 0.05);
+}
+function noise(o){
+  var a = AC, t = o.t || a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf; f.type = o.ft || 'bandpass'; f.frequency.setValueAtTime(o.f, t);
+  if(o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + o.dur);
+  f.Q.value = o.Q || 1;
+  g.gain.setValueAtTime(o.g, t); g.gain.exponentialRampToValueAtTime(0.001, t + o.dur);
+  s.connect(f); f.connect(g); g.connect(o.dest || sGain);
+  s.start(t, Math.random()*1.5); s.stop(t + o.dur + 0.05);
+}
+var EIGHTH = 60/84/2;
+var BASS = ['D2','D2','Bb1','A1','D2','D2','G1','A1'];
+var CHORD = [['D4','F4','A4','D5'],['D4','F4','A4','D5'],['Bb3','D4','F4','Bb4'],['A3','C#4','E4','A4'],
+             ['D4','F4','A4','D5'],['D4','F4','A4','D5'],['G3','Bb3','D4','G4'],['A3','C#4','E4','A4']];
+var ARP = [0,1,2,3,2,1,2,1];
+var MEL = [[[0,3,'A4'],[3,1,'Bb4'],[4,4,'A4']], [[0,2,'F4'],[2,2,'E4'],[4,4,'D4']], [[0,3,'F4'],[3,1,'G4'],[4,4,'F4']], [[0,4,'E4'],[4,4,'C#5']],
+           [[0,3,'D5'],[3,1,'C#5'],[4,4,'D5']], [[0,2,'A4'],[2,2,'F4'],[4,4,'A4']], [[0,3,'G4'],[3,1,'Bb4'],[4,4,'D5']], [[0,6,'C#5'],[6,2,'E5']]];
+function musicStep(i, t){
+  var bar = Math.floor(i/8) % 8, e = i % 8, b = note(BASS[bar]);
+  if(e % 2 === 0){
+    tone({t:t, f:b, dur:EIGHTH*1.5, type:'sawtooth', g:0.06, lp:380, rl:0.2, dest:mBus});
+    tone({t:t, f:b*2, dur:EIGHTH*1.5, type:'sine', g:0.04, rl:0.2, dest:mBus});
+  }
+  tone({t:t, f:note(CHORD[bar][ARP[e]]), dur:0.05, type:'triangle', g:0.04, sus:0.3, rl:0.6, dest:mBus});
+  MEL[bar].forEach(function(m){ if(m[0] === e) tone({t:t, f:note(m[2]), dur:m[1]*EIGHTH*0.92, type:'sine', g:0.055, at:0.09, rl:0.3, vib:5.5, vd:0.014, dest:mBus}); });
+  if(i % 64 === 0) tone({t:t, f:110, f2:40, dur:1.2, type:'sine', g:0.2, rl:0.8, dest:mBus});
+  if(i % 32 === 20){
+    tone({t:t, f:note('A5'), dur:0.04, type:'sine', g:0.035, sus:0.4, rl:2.2, dest:mBus});
+    tone({t:t, f:note('A5')*2.76, dur:0.04, type:'sine', g:0.012, sus:0.3, rl:1.4, dest:mBus});
+  }
+}
+function startMusic(){
+  if(musicOn || !SND.music) return;
+  var a = audio(); if(!a) return;
+  musicOn = true; mStep = 0; mNext = a.currentTime + 0.1;
+  mGain.gain.cancelScheduledValues(a.currentTime); mGain.gain.setValueAtTime(0, a.currentTime); mGain.gain.linearRampToValueAtTime(0.55, a.currentTime + 1.5);
+  mTimer = setInterval(function(){
+    if(mNext < AC.currentTime - 0.05) mNext = AC.currentTime + 0.05;
+    while(mNext < AC.currentTime + 0.2){ musicStep(mStep++, mNext); mNext += EIGHTH; }
+  }, 40);
+  try{
+    var s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), lfo = a.createOscillator(), lg = a.createGain();
+    s.buffer = noiseBuf; s.loop = true; f.type = 'bandpass'; f.frequency.value = 500; f.Q.value = 0.7; g.gain.value = 0.03;
+    lfo.frequency.value = 0.08; lg.gain.value = 300; lfo.connect(lg); lg.connect(f.frequency);
+    s.connect(f); f.connect(g); g.connect(mGain); s.start(); lfo.start();
+    wind = {s:s, lfo:lfo};
+  }catch(e){}
+}
+function stopMusic(){
+  if(!musicOn) return;
+  musicOn = false; clearInterval(mTimer);
+  if(wind){ try{ wind.s.stop(); wind.lfo.stop(); }catch(e){} wind = null; }
+  if(AC){ mGain.gain.cancelScheduledValues(AC.currentTime); mGain.gain.setValueAtTime(0, AC.currentTime); }
+}
+function sfx(name){
+  if(!SND.sfx) return;
+  var a = audio(); if(!a) return;
+  var t = a.currentTime + 0.01;
+  if(name === 'step') noise({t:t, f:240, ft:'lowpass', dur:0.05, g:0.12});
+  else if(name === 'creak'){ tone({t:t, f:150, f2:92, dur:0.5, type:'sawtooth', g:0.05, lp:900, vib:11, vd:0.06, at:0.05, rl:0.15}); noise({t:t, f:1400, Q:3, dur:0.4, g:0.035}); }
+  else if(name === 'correct') ['D5','F#5','A5','D6'].forEach(function(n, k){ tone({t:t + k*0.08, f:note(n), dur:0.05, type:'triangle', g:0.12, sus:0.4, rl:0.4}); });
+  else if(name === 'wrong'){ tone({t:t, f:110, dur:0.28, type:'square', g:0.05, lp:700}); tone({t:t, f:117, dur:0.28, type:'square', g:0.05, lp:700}); }
+  else if(name === 'piece') ['A5','C#6','E6','A6','E6','A6'].forEach(function(n, k){ tone({t:t + k*0.07, f:note(n), dur:0.05, type:'triangle', g:0.1, sus:0.3, rl:0.6}); });
+  else if(name === 'locked'){ noise({t:t, f:170, ft:'lowpass', dur:0.08, g:0.7}); noise({t:t + 0.2, f:170, ft:'lowpass', dur:0.08, g:0.7}); }
+  else if(name === 'help') tone({t:t, f:520, f2:780, dur:0.25, type:'sine', g:0.05, vib:6, at:0.06, rl:0.2});
+  else if(name === 'whoosh') noise({t:t, f:1200, f2:250, Q:0.8, dur:0.4, g:0.1});
+  else if(name === 'fanfare'){
+    ['D4','F#4','A4','D5','F#5','A5'].forEach(function(n, k){ tone({t:t + k*0.11, f:note(n), dur:0.3, type:'triangle', g:0.09, sus:0.6, rl:0.9}); });
+    ['D4','F#4','A4','D5'].forEach(function(n){ tone({t:t + 0.8, f:note(n), dur:1.2, type:'sine', g:0.06, at:0.05, rl:1.2, vib:5}); });
+    tone({t:t + 0.2, f:330, f2:660, dur:1, type:'sine', g:0.03, vib:4, at:0.3, rl:0.6});
+  }
+}
+function syncSound(){
+  $('musicBtn').setAttribute('aria-pressed', SND.music ? 'true' : 'false'); $('musicBtn').textContent = SND.music ? '🎵 Music on' : '🎵 Music off';
+  $('sfxBtn').setAttribute('aria-pressed', SND.sfx ? 'true' : 'false'); $('sfxBtn').textContent = SND.sfx ? '🔊 Sounds on' : '🔇 Sounds off';
+}
+$('musicBtn').onclick = function(){ SND.music = !SND.music; save(PREFS, SND); syncSound(); if(SND.music) startMusic(); else stopMusic(); };
+$('sfxBtn').onclick = function(){ SND.sfx = !SND.sfx; save(PREFS, SND); syncSound(); };
+// browsers only allow sound after the player clicks or presses a key
+function firstGesture(){ if(SND.music && S && !S.finishedAt) startMusic(); else audio(); }
+document.addEventListener('pointerdown', firstGesture, true);
+document.addEventListener('keydown', firstGesture, true);
+
+/* ---------- the house ---------- */
+// '#' wall, '.' floor, A–M doors 1–13, X front door
+var MAP = [
+  '#######################',
+  '#####J#####K#####L#####',
+  '#.....................#',
+  '#####I#####.#####M#####',
+  '###########.###########',
+  '#####G#####.#####F#####',
+  '#.....................#',
+  '#.#####H#######E#####.#',
+  '#.###################.#',
+  '#.###B###########C###.#',
+  '#.....................#',
+  '#####A#####X#####D#####'
+];
+var MW = MAP[0].length, MH = MAP.length, START = [11, 10], EXIT = [11, 11], DOOR_POS = [];
+MAP.forEach(function(row, y){ for(var x = 0; x < row.length; x++){ var k = row.charCodeAt(x) - 65; if(k >= 0 && k < 13) DOOR_POS[k] = [x, y]; } });
+var TORCHES = [[2,1],[8,1],[14,1],[20,1],[2,5],[8,5],[14,5],[20,5],[8,9],[14,9],[3,11],[19,11]];
+var PUMPKINS = [[1,2],[21,2],[1,10],[21,10],[9,6],[13,6]];
+var WEBS = [[1,6],[21,6],[3,2],[19,10]];
+var GHOSTS = [{row:6, ph:0, sp:5200}, {row:2, ph:2.1, sp:6100}, {row:10, ph:4.2, sp:7300}];
+function tile(x, y){ return (y < 0 || y >= MH || x < 0 || x >= MW) ? '#' : MAP[y][x]; }
+function doorIdx(ch){ var k = ch.charCodeAt(0) - 65; return (k >= 0 && k < 13) ? k : -1; }
+
+var G = {x:START[0], y:START[1], ox:START[0], oy:START[1], fx:START[0], fy:START[1], t0:0, moving:false, face:1, path:[], hold:null, steps:0};
+var STEP_MS = 150;
+function resetPlayer(){
+  var p = (S && S.pos && tile(S.pos[0], S.pos[1]) === '.') ? S.pos : START;
+  G.x = G.ox = G.fx = p[0]; G.y = G.oy = G.fy = p[1]; G.moving = false; G.path = []; G.hold = null;
+}
+function nearInfo(){
+  if(!S) return '';
+  var out = '';
+  [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(d){
+    var ch = tile(G.x + d[0], G.y + d[1]), i = doorIdx(ch);
+    if(i >= 0) out = S.rec[i].done ? 'Door ' + (i + 1) + ' is open. You already have its letter “' + letterOf(i) + '”.' : 'Door ' + (i + 1) + ' is right here. Walk into it to open it.';
+    else if(ch === 'X') out = doneCount() === 13 ? 'The front door! Walk into it to break the spell.' : 'The front door is sealed. Collect all 13 letters first.';
+  });
+  if(out) return out;
+  var n = doneCount();
+  return n === 13 ? 'You have all 13 letters. Go to the front door at the bottom of the house.' : 'Find a glowing door. ' + (13 - n) + (13 - n === 1 ? ' letter is' : ' letters are') + ' still hidden.';
+}
+function tryStep(dx, dy, now){
+  if(!S || modalOpen()) return;
+  if(dx) G.face = dx;
+  var nx = G.x + dx, ny = G.y + dy, ch = tile(nx, ny), di = doorIdx(ch);
+  if(ch === '.'){
+    G.ox = G.x; G.oy = G.y; G.x = nx; G.y = ny; G.t0 = now; G.moving = true;
+    if(++G.steps % 2 === 0) sfx('step');
+    return;
+  }
+  G.path = []; G.hold = null;
+  if(di >= 0) openDoor(di);
+  else if(ch === 'X') frontDoor();
+}
+function arrive(){
+  S.pos = [G.x, G.y]; persist();
+  $('status').textContent = nearInfo();
+}
+function frontDoor(){
+  var n = doneCount();
+  if(n < 13){ sfx('locked'); toast('The front door is sealed by a spell. You need all 13 letters. You have ' + n + '.'); return; }
+  openFinal();
+}
+function pathTo(tx, ty){
+  var ch = tile(tx, ty), goals = {};
+  var D = [[0,1],[0,-1],[1,0],[-1,0]];
+  if(ch === '.') goals[tx + ',' + ty] = null;
+  else if(doorIdx(ch) >= 0 || ch === 'X') D.forEach(function(d){ if(tile(tx + d[0], ty + d[1]) === '.') goals[(tx + d[0]) + ',' + (ty + d[1])] = [-d[0], -d[1]]; });
+  else return null;
+  var start = G.x + ',' + G.y, prev = {}, q = [[G.x, G.y]];
+  prev[start] = null;
+  while(q.length){
+    var c = q.shift(), key = c[0] + ',' + c[1];
+    if(key in goals){
+      var steps = [], k = key;
+      while(prev[k]){ steps.unshift(prev[k].d); k = prev[k].from; }
+      if(goals[key]) steps.push(goals[key]);
+      return steps;
+    }
+    D.forEach(function(d){
+      var nx = c[0] + d[0], ny = c[1] + d[1], nk = nx + ',' + ny;
+      if(tile(nx, ny) === '.' && !(nk in prev)){ prev[nk] = {from:key, d:d}; q.push([nx, ny]); }
+    });
+  }
+  return null;
+}
+
+/* input */
+var KEYS = {ArrowUp:[0,-1], w:[0,-1], ArrowDown:[0,1], s:[0,1], ArrowLeft:[-1,0], a:[-1,0], ArrowRight:[1,0], d:[1,0]};
+function keyDir(e){ return KEYS[e.key && e.key.length === 1 ? e.key.toLowerCase() : e.key]; }
+window.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ if(!$('qModal').hidden) closeDoor(); else if(!$('fModal').hidden) closeFinal(); return; }
+  if($('vHouse').hidden || modalOpen()) return;
+  var tg = e.target.tagName; if(tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT' || (tg === 'BUTTON' && e.key.length > 1 && e.key.indexOf('Arrow') < 0)) return;
+  var d = keyDir(e); if(!d) return;
+  e.preventDefault(); G.path = []; G.hold = d;
+  if(!G.moving) tryStep(d[0], d[1], performance.now());
+});
+window.addEventListener('keyup', function(e){ var d = keyDir(e); if(d && G.hold && G.hold[0] === d[0] && G.hold[1] === d[1]) G.hold = null; });
+window.addEventListener('blur', function(){ G.hold = null; });
+$('house').addEventListener('pointerdown', function(e){
+  if(!S || modalOpen()) return;
+  var r = $('house').getBoundingClientRect(), c = cam();
+  var tx = Math.floor((e.clientX - r.left + c[0]) / T), ty = Math.floor((e.clientY - r.top + c[1]) / T);
+  G.hold = null; G.path = pathTo(tx, ty) || [];
+});
+document.querySelectorAll('.pad button').forEach(function(b){
+  var d = b.dataset.dir.split(',').map(Number);
+  b.addEventListener('pointerdown', function(e){ e.preventDefault(); G.path = []; G.hold = d; if(!G.moving) tryStep(d[0], d[1], performance.now()); });
+  ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ b.addEventListener(ev, function(){ G.hold = null; }); });
+  b.addEventListener('click', function(e){ if(e.detail === 0 && !G.moving) tryStep(d[0], d[1], performance.now()); });
+});
+
+/* drawing */
+var cv = $('house'), ctx = cv.getContext('2d'), mask = document.createElement('canvas'), mctx = mask.getContext('2d');
+var T = 38, VW = 0, VH = 0, DPR = 1, rafId = 0, lastT = 0, bats = [], nextBat = 3000, sparks = [];
+var EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function sizeCanvas(){
+  var w = cv.parentElement.clientWidth; if(!w) return false;
+  T = Math.max(34, Math.min(46, Math.floor(w / MW)));
+  var h = Math.min(MH*T, Math.max(300, Math.round(window.innerHeight*0.62)));
+  var dpr = window.devicePixelRatio || 1;
+  if(w !== VW || h !== VH || dpr !== DPR){
+    VW = w; VH = h; DPR = dpr;
+    cv.width = mask.width = Math.round(w*dpr); cv.height = mask.height = Math.round(h*dpr); cv.style.height = h + 'px';
+  }
+  return true;
+}
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function cam(){
+  var mw = MW*T, mh = MH*T, px = (G.fx + 0.5)*T, py = (G.fy + 0.5)*T;
+  return [mw <= VW ? (mw - VW)/2 : clamp(px - VW/2, 0, mw - VW), mh <= VH ? (mh - VH)/2 : clamp(py - VH/2, 0, mh - VH)];
+}
+function emoji(ch, x, y, size, alpha){
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  ctx.font = Math.round(size) + 'px ' + EMOJI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(ch, x, y); ctx.globalAlpha = 1;
+}
+function drawWall(x, y){
+  var X = x*T, Y = y*T;
+  ctx.fillStyle = '#22162f'; ctx.fillRect(X, Y, T, T);
+  ctx.strokeStyle = '#160d20'; ctx.lineWidth = 1.5;
+  for(var r = 0; r < 3; r++){
+    var yy = Y + r*T/3; ctx.beginPath(); ctx.moveTo(X, yy); ctx.lineTo(X + T, yy); ctx.stroke();
+    var off = ((r + x + y) % 2) ? T/2 : T/4;
+    ctx.beginPath(); ctx.moveTo(X + off, yy); ctx.lineTo(X + off, yy + T/3); ctx.stroke();
+  }
+  if(tile(x, y + 1) === '.'){ ctx.fillStyle = '#33224a'; ctx.fillRect(X, Y + T*0.72, T, T*0.28); ctx.fillStyle = '#120a1a'; ctx.fillRect(X, Y + T - 2, T, 2); }
+}
+function drawFloor(x, y){
+  var X = x*T, Y = y*T;
+  ctx.fillStyle = (y % 2) ? '#3a271d' : '#35231a'; ctx.fillRect(X, Y, T, T);
+  ctx.strokeStyle = '#22150e'; ctx.lineWidth = 1;
+  for(var r = 1; r < 3; r++){ ctx.beginPath(); ctx.moveTo(X, Y + r*T/3); ctx.lineTo(X + T, Y + r*T/3); ctx.stroke(); }
+  for(r = 0; r < 3; r++){ var sx = X + (((x*7 + r*3 + y) % 4) + 0.5)*T/4; ctx.beginPath(); ctx.moveTo(sx, Y + r*T/3); ctx.lineTo(sx, Y + (r + 1)*T/3); ctx.stroke(); }
+}
+function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); }
+function drawDoor(x, y, i, now){
+  drawWall(x, y);
+  var X = x*T + T*0.12, Y = y*T + T*0.06, w = T*0.76, h = T*0.9, r = S.rec[i];
+  if(r.done){
+    roundRect(X, Y, w, h, w/2); ctx.fillStyle = '#07040b'; ctx.fill();
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#ffd166'; ctx.font = 'bold ' + Math.round(T*0.5) + 'px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 10; ctx.fillText(letterOf(i), x*T + T/2, y*T + T*0.56); ctx.shadowBlur = 0;
+    return;
+  }
+  var g = ctx.createLinearGradient(X, 0, X + w, 0); g.addColorStop(0, '#5a2e14'); g.addColorStop(0.5, '#86491f'); g.addColorStop(1, '#4b250f');
+  roundRect(X, Y, w, h, w/2); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,138,31,' + (0.45 + 0.35*Math.sin(now/450 + i)) + ')'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1;
+  [0.33, 0.66].forEach(function(f){ ctx.beginPath(); ctx.moveTo(X + w*f, Y + h*0.25); ctx.lineTo(X + w*f, Y + h); ctx.stroke(); });
+  ctx.beginPath(); ctx.arc(x*T + T/2, y*T + T*0.52, T*0.2, 0, 6.2832); ctx.fillStyle = '#f4c96b'; ctx.fill();
+  ctx.fillStyle = '#2a1505'; ctx.font = 'bold ' + Math.round(T*(i >= 9 ? 0.24 : 0.3)) + 'px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(i + 1), x*T + T/2, y*T + T*0.53);
+}
+function drawExit(x, y, now){
+  drawWall(x, y);
+  var ready = doneCount() === 13, X = x*T + T*0.08, Y = y*T + T*0.04, w = T*0.84, h = T*0.92;
+  roundRect(X, Y, w, h, T*0.18); ctx.fillStyle = '#3a3f4d'; ctx.fill();
+  ctx.strokeStyle = ready ? 'rgba(139,227,107,' + (0.6 + 0.4*Math.sin(now/300)) + ')' : '#1b1e26'; ctx.lineWidth = ready ? 3 : 2; ctx.stroke();
+  ctx.strokeStyle = '#1b1e26'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x*T + T/2, Y + 3); ctx.lineTo(x*T + T/2, Y + h); ctx.stroke();
+  emoji(ready ? '🗝️' : '🔒', x*T + T/2, y*T + T*0.56, T*0.42);
+}
+function draw(now, dt){
+  if(!sizeCanvas()) return;
+  var c = cam();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = '#06040a'; ctx.fillRect(0, 0, VW, VH);
+  ctx.save(); ctx.translate(-c[0], -c[1]);
+  var x0 = Math.max(0, Math.floor(c[0]/T)), x1 = Math.min(MW - 1, Math.ceil((c[0] + VW)/T)), y0 = Math.max(0, Math.floor(c[1]/T)), y1 = Math.min(MH - 1, Math.ceil((c[1] + VH)/T));
+  for(var y = y0; y <= y1; y++) for(var x = x0; x <= x1; x++){
+    var ch = MAP[y][x], di = doorIdx(ch);
+    if(ch === '.') drawFloor(x, y); else if(di >= 0) drawDoor(x, y, di, now); else if(ch === 'X') drawExit(x, y, now); else drawWall(x, y);
+  }
+  TORCHES.forEach(function(p, k){ emoji('🕯️', p[0]*T + T/2, p[1]*T + T*0.5 + Math.sin(now/200 + k)*0.6, T*0.5); });
+  WEBS.forEach(function(p){ emoji('🕸️', p[0]*T + T/2, p[1]*T + T/2, T*0.75, 0.5); });
+  PUMPKINS.forEach(function(p){ emoji('🎃', p[0]*T + T/2, p[1]*T + T*0.62, T*0.5); });
+  GHOSTS.forEach(function(g){ var gx = 1.5 + (Math.sin(now/g.sp + g.ph) + 1)/2*19; g.x = gx; emoji('👻', gx*T + T/2, g.row*T + T/2 + Math.sin(now/300 + g.ph)*T*0.08, T*0.7, 0.55); });
+  // player
+  var px = (G.fx + 0.5)*T, py = (G.fy + 0.5)*T, bob = G.moving ? Math.abs(Math.sin(now/70))*T*0.08 : Math.sin(now/400)*T*0.03;
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(px, py + T*0.36, T*0.28, T*0.09, 0, 0, 6.2832); ctx.fill();
+  ctx.save(); ctx.translate(px, py - bob); if(G.face > 0) ctx.scale(-1, 1);
+  ctx.font = Math.round(T*0.82) + 'px ' + EMOJI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(AVATARS[S.av || 0][0], 0, 0);
+  ctx.restore();
+  ctx.restore();
+
+  // darkness with pools of light
+  mctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  mctx.globalCompositeOperation = 'source-over'; mctx.clearRect(0, 0, VW, VH);
+  mctx.fillStyle = 'rgba(4,2,8,0.86)'; mctx.fillRect(0, 0, VW, VH);
+  mctx.globalCompositeOperation = 'destination-out';
+  function light(tx, ty, r, a){
+    var lx = (tx + 0.5)*T - c[0], ly = (ty + 0.5)*T - c[1], R = r*T;
+    if(lx < -R || ly < -R || lx > VW + R || ly > VH + R) return;
+    var g = mctx.createRadialGradient(lx, ly, 0, lx, ly, R); g.addColorStop(0, 'rgba(0,0,0,' + a + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    mctx.fillStyle = g; mctx.fillRect(lx - R, ly - R, 2*R, 2*R);
+  }
+  light(G.fx, G.fy, 3.8 + 0.12*Math.sin(now/310), 1);
+  TORCHES.forEach(function(p, k){ light(p[0], p[1] + 0.4, 1.7 + 0.15*Math.sin(now/130 + k*2), 0.7); });
+  DOOR_POS.forEach(function(p, i){ if(S.rec[i].done) light(p[0], p[1], 1.3, 0.8); else light(p[0], p[1], 1.15, 0.45 + 0.25*Math.sin(now/500 + i)); });
+  light(EXIT[0], EXIT[1], doneCount() === 13 ? 2 : 1, doneCount() === 13 ? 0.9 : 0.4);
+  GHOSTS.forEach(function(g){ if(g.x != null) light(g.x, g.row, 0.9, 0.35); });
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(mask, 0, 0);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // sparkles and bats above the dark
+  sparks = sparks.filter(function(p){ p.life -= dt/1000; return p.life > 0; });
+  sparks.forEach(function(p){
+    p.x += p.vx*dt/1000; p.y += p.vy*dt/1000; p.vy += 120*dt/1000;
+    ctx.globalAlpha = Math.min(1, p.life*1.5); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x*T - c[0], p.y*T - c[1], 2.5, 0, 6.2832); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  nextBat -= dt;
+  if(nextBat <= 0){ nextBat = 7000 + Math.random()*9000; var dir = Math.random() < 0.5 ? 1 : -1; bats.push({x:dir > 0 ? -30 : VW + 30, y:20 + Math.random()*VH*0.5, vx:dir*(110 + Math.random()*70), ph:Math.random()*6}); }
+  bats = bats.filter(function(b){ return b.x > -60 && b.x < VW + 60; });
+  bats.forEach(function(b){
+    b.x += b.vx*dt/1000;
+    ctx.save(); ctx.translate(b.x, b.y + Math.sin(now/180 + b.ph)*10); ctx.scale(1, 0.6 + 0.4*Math.abs(Math.sin(now/70 + b.ph)));
+    ctx.font = '22px ' + EMOJI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🦇', 0, 0); ctx.restore();
+  });
+}
+function sparkle(p){
+  for(var k = 0; k < 36; k++){
+    var a = Math.random()*6.2832, s = 1 + Math.random()*2.5;
+    sparks.push({x:p[0] + 0.5, y:p[1] + 0.5, vx:Math.cos(a)*s, vy:Math.sin(a)*s - 1.5, life:0.8 + Math.random()*0.7, c:Math.random() < 0.7 ? '#ffd166' : '#ff8a1f'});
+  }
+}
+function update(now){
+  if(G.moving){
+    var k = (now - G.t0)/STEP_MS;
+    if(k >= 1){ G.moving = false; G.fx = G.x; G.fy = G.y; arrive(); }
+    else { G.fx = G.ox + (G.x - G.ox)*k; G.fy = G.oy + (G.y - G.oy)*k; }
+  }
+  if(!G.moving && !modalOpen()){
+    if(G.path.length){ var d = G.path.shift(); tryStep(d[0], d[1], now); }
+    else if(G.hold) tryStep(G.hold[0], G.hold[1], now);
+  }
+}
+function frame(now){
+  rafId = 0;
+  if(!S || $('vHouse').hidden) return;
+  var dt = lastT ? Math.min(100, now - lastT) : 16; lastT = now;
+  if(!modalOpen()){ update(now); draw(now, dt); }
+  rafId = requestAnimationFrame(frame);
+}
+function kick(){ lastT = 0; if(!rafId) rafId = requestAnimationFrame(frame); }
+
+/* ---------- front door puzzle ---------- */
+var F = {pick:[], hint:0};
+function openFinal(){
+  F.pick = []; F.hint = 0; $('fMsg').textContent = ''; $('fMsg').className = 'msg';
+  sfx('creak'); renderFinal();
+  $('fModal').hidden = false; document.body.style.overflow = 'hidden';
+  setTimeout(function(){ var t = $('fTiles').querySelector('button'); if(t) t.focus({preventScroll:true}); }, 40);
+}
+function closeFinal(){ $('fModal').hidden = true; document.body.style.overflow = ''; $('house').focus({preventScroll:true}); }
+$('fClose').onclick = closeFinal;
+function renderFinal(){
+  var slots = $('fSlots'), tiles = $('fTiles'), k = 0;
+  slots.textContent = ''; tiles.textContent = '';
+  [6, 7].forEach(function(len){
+    var w = document.createElement('div'); w.className = 'word';
+    for(var j = 0; j < len; j++, k++){
+      var b = document.createElement('button'), has = F.pick[k] != null;
+      b.type = 'button'; b.className = 'slot' + (has ? ' filled' : ''); b.textContent = has ? letterOf(F.pick[k]) : '';
+      b.setAttribute('aria-label', has ? 'Box ' + (k + 1) + ': ' + letterOf(F.pick[k]) + '. Tap to take it back.' : 'Box ' + (k + 1) + ': empty');
+      (function(idx){ b.onclick = function(){ if(F.pick[idx] != null){ F.pick.splice(idx, 1); renderFinal(); } }; })(k);
+      w.appendChild(b);
+    }
+    slots.appendChild(w);
+  });
+  for(var i = 0; i < 13; i++){
+    var t = document.createElement('button');
+    t.type = 'button'; t.className = 'tile'; t.textContent = letterOf(i); t.disabled = F.pick.indexOf(i) >= 0;
+    t.setAttribute('aria-label', 'Letter ' + letterOf(i) + ' from door ' + (i + 1));
+    (function(idx){ t.onclick = function(){ if(F.pick.length < 13){ F.pick.push(idx); sfx('step'); renderFinal(); var nx = $('fTiles').querySelector('button:not(:disabled)'); if(nx) nx.focus({preventScroll:true}); } }; })(i);
+    tiles.appendChild(t);
+  }
+}
+$('fClear').onclick = function(){ F.pick = []; renderFinal(); };
+$('fHint').onclick = function(){
+  F.hint = Math.min(2, F.hint + 1);
+  var h = ['Two words. The first word (6 letters) describes this house. The second word (7 letters) is what you have been solving all night: ______ of equations.',
+           'The first word is SPOOKY.'];
+  $('fMsg').className = 'msg info'; $('fMsg').textContent = h.slice(0, F.hint).join(' ');
+  sfx('help');
+};
+$('fCheck').onclick = function(){
+  var m = $('fMsg');
+  if(F.pick.length < 13){ m.className = 'msg info'; m.textContent = 'Fill all 13 boxes first.'; return; }
+  var word = F.pick.map(letterOf).join('');
+  if(word !== PHRASE){ m.className = 'msg warn'; m.textContent = 'The spell holds. That is not the phrase. Try a different order, or press Hint.'; sfx('wrong'); return; }
+  S.finishedAt = Date.now(); S.pos = START.slice(); persist();
+  closeModals(); stopMusic(); sfx('fanfare');
+  renderDone(); show('vDone'); window.scrollTo(0, 0);
+  toast('The spell breaks and the front door swings open!');
+};
+
+/* ---------- escaped ---------- */
+function renderDone(){
+  var s = summarize(S.rec), mins = Math.max(1, Math.round((S.finishedAt - S.startedAt)/60000));
+  $('doneTitle').textContent = 'You escaped, ' + S.name.split(' ')[0] + '!';
+  var stats = $('doneStats'); stats.innerHTML = '';
+  [[s.own + ' / 13', 'doors solved on your own'], [s.rec, 'doors solved after help and a similar problem'], [s.wrong, 'wrong tries in all'], [mins, mins === 1 ? 'minute in the house' : 'minutes in the house']].forEach(function(x){
+    var d = document.createElement('div'); d.className = 'stat'; d.innerHTML = '<b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span>'; stats.appendChild(d);
+  });
+  $('codeFor').textContent = 'Turn in this code together with your name, spelled exactly as: ' + S.name;
+  $('codeOut').textContent = makeCode(S);
+  $('copyMsg').textContent = ''; $('copyFallback').hidden = true;
+}
+$('copyBtn').onclick = function(){
+  var text = 'Name: ' + S.name + '\nHaunted House code: ' + $('codeOut').textContent;
+  function fallback(){ var ta = $('copyFallback'); ta.hidden = false; ta.value = text; ta.focus(); ta.select(); $('copyMsg').textContent = 'Select the text below and copy it.'; }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ $('copyMsg').textContent = 'Copied your name and code.'; }, fallback);
+    else fallback();
+  }catch(e){ fallback(); }
+};
+$('againBtn').onclick = function(){
+  armButton($('againBtn'), '🎃 Play again', 'Click again to erase this escape', function(){
+    var name = S ? S.name : '';
+    pickAv = S ? (S.av || 0) : 0; S = null; pts = [];
+    try{ localStorage.removeItem(STORE); }catch(e){}
+    $('nameIn').value = name; $('startMsg').textContent = '';
+    renderAvatars(); show('vStart'); window.scrollTo(0, 0);
+  });
+};
+
+/* ---------- review to print or save ---------- */
+var LIGHT = {'--plot-grid':'#d6d6d6', '--axis':'#555555', '--line1':'#1f63c6', '--line2':'#cc3b2b', '--plot-bg':'#ffffff', '--ink':'#111111', '--ok':'#1d7a3e'};
+function graphImg(q){ var c = document.createElement('canvas'); drawBoard(c, q, {answer:true, pal:LIGHT}); return '<img alt="Graph of both lines" src="' + c.toDataURL('image/png') + '">'; }
+function howItWent(r){
+  var res = r.solved ? (r.h >= HELP_LIMIT ? 'Correct, with a lot of help' : (r.w ? 'Correct after ' + r.w + ' wrong ' + (r.w === 1 ? 'try' : 'tries') : 'Correct on the first try')) : 'Viewed the full solution';
+  res += '. Help used: ' + HELP_LABEL[r.h] + '.';
+  if(r.sc) res += ' Similar problems: ' + r.sc + ' tried, ' + (r.sok ? 'solved one on your own.' : 'did not solve one on your own.');
+  return res;
+}
+function buildReview(){
+  var s = summarize(S.rec), when = new Date(S.finishedAt);
+  var h = '<h1>Intermediate 3-1 Haunted House: review</h1>' +
+    '<p><b>Name:</b> ' + esc(S.name) + ' · <b>Escaped:</b> ' + esc(when.toLocaleDateString()) + ' · <b>On your own:</b> ' + s.own + ' of 13 doors</p>' +
+    '<p><b>Teacher code:</b> <span style="font-family:monospace">' + esc(makeCode(S)) + '</span></p>';
+  P.forEach(function(q, i){
+    var eqs = q.kind === 'one' ? '<p class="mathy">' + pairText(q.pt) + '</p>' + sysHtml(q.eqs.map(function(e){ return e.t; }))
+            : q.kind === 'two' ? sysHtml(q.eqs.map(function(e){ return e.t; })) : sysHtml(q.eqs);
+    var sol = solutionHtml(q).replace(/<canvas[^>]*><\/canvas>/, q.lines ? graphImg(q) : '');
+    h += '<section class="rv"><h2>Door ' + (i + 1) + ' · Problem ' + (i + 1) + '</h2><p>' + DIRECTIONS[q.kind] + '</p>' + eqs +
+      '<p class="res">How it went: ' + esc(howItWent(S.rec[i])) + '</p><h3>Worked solution</h3>' + sol + '</section>';
+  });
+  $('review').innerHTML = h;
+  return h;
+}
+$('printBtn').onclick = function(){ buildReview(); setTimeout(function(){ window.print(); }, 60); };
+$('dlBtn').onclick = function(){
+  var body = buildReview();
+  var doc = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>3-1 Haunted House review: ' + esc(S.name) + '</title>' +
+    '<style>body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111;line-height:1.5}.sys{font-family:Georgia,serif;font-size:1.3rem;border-left:3px solid #111;border-radius:10px 0 0 10px;padding:2px 0 2px 14px;display:inline-block}' +
+    '.mathy{font-family:Georgia,serif}.rv{border-top:1px solid #999;padding-top:10px;margin-top:16px;break-inside:avoid}.res{font-weight:700}img{width:280px;height:280px}h4{margin:0}</style></head><body>' + body + '</body></html>';
+  var url = URL.createObjectURL(new Blob([doc], {type:'text/html'}));
+  var a = document.createElement('a'); a.href = url; a.download = 'Haunted-House-review-' + S.name.replace(/[^A-Za-z]+/g, '-') + '.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+};
+
+/* ---------- boot ---------- */
+window.addEventListener('hashchange', route);
+window.addEventListener('resize', function(){ if(!$('vHouse').hidden) kick(); });
+syncSound();
+var saved = load(STORE);
+if(saved && saved.name && Array.isArray(saved.rec) && saved.rec.length === P.length && saved.rec[0].cur){ S = saved; S.open = null; pickAv = S.av || 0; }
+renderAvatars();
+if(S) resetPlayer();
+route();
+})();
+</script>
+</body>
+</html>
